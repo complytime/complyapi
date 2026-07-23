@@ -1,0 +1,226 @@
+// SPDX-License-Identifier: Apache-2.0
+
+package events
+
+import (
+	"encoding/json"
+	"testing"
+
+	cloudevents "github.com/cloudevents/sdk-go/v2"
+)
+
+func TestTypeEvidenceIngestedConstant(t *testing.T) {
+	if TypeEvidenceIngested != "dev.complytime.evidence.ingested" {
+		t.Errorf("TypeEvidenceIngested = %q, want %q", TypeEvidenceIngested, "dev.complytime.evidence.ingested")
+	}
+}
+
+func TestEvidenceIngestedDataJSON(t *testing.T) {
+	data := EvidenceIngestedData{
+		ContentDigest: "sha256:abc123",
+		ArtifactType:  "application/vnd.gemara.evaluation-log+json",
+		StorageRef:    "ref/123",
+		SubjectID:     "my-app-v1",
+	}
+
+	b, err := json.Marshal(data)
+	if err != nil {
+		t.Fatalf("Marshal: %v", err)
+	}
+
+	var got EvidenceIngestedData
+	if err := json.Unmarshal(b, &got); err != nil {
+		t.Fatalf("Unmarshal: %v", err)
+	}
+
+	if got.ContentDigest != data.ContentDigest {
+		t.Errorf("ContentDigest = %q, want %q", got.ContentDigest, data.ContentDigest)
+	}
+	if got.ArtifactType != data.ArtifactType {
+		t.Errorf("ArtifactType = %q, want %q", got.ArtifactType, data.ArtifactType)
+	}
+	if got.StorageRef != data.StorageRef {
+		t.Errorf("StorageRef = %q, want %q", got.StorageRef, data.StorageRef)
+	}
+	if got.SubjectID != data.SubjectID {
+		t.Errorf("SubjectID = %q, want %q", got.SubjectID, data.SubjectID)
+	}
+}
+
+func TestEvidenceIngestedDataJSONOmitsOptionalFields(t *testing.T) {
+	data := EvidenceIngestedData{
+		ContentDigest: "sha256:abc123",
+		ArtifactType:  "application/vnd.gemara.evaluation-log+json",
+		SubjectID:     "my-app-v1",
+	}
+
+	b, err := json.Marshal(data)
+	if err != nil {
+		t.Fatalf("Marshal: %v", err)
+	}
+
+	raw := make(map[string]interface{})
+	if err := json.Unmarshal(b, &raw); err != nil {
+		t.Fatalf("Unmarshal to map: %v", err)
+	}
+
+	if _, ok := raw["storageRef"]; ok {
+		t.Error("storageRef should be omitted when empty")
+	}
+	if _, ok := raw["shardId"]; ok {
+		t.Error("shardId should be omitted when nil")
+	}
+}
+
+func TestEvidenceIngestedDataJSONIncludesShardID(t *testing.T) {
+	shard := "shard-1"
+	data := EvidenceIngestedData{
+		ContentDigest: "sha256:abc123",
+		ArtifactType:  "application/vnd.gemara.evaluation-log+json",
+		SubjectID:     "my-app-v1",
+		ShardID:       &shard,
+	}
+
+	b, err := json.Marshal(data)
+	if err != nil {
+		t.Fatalf("Marshal: %v", err)
+	}
+
+	raw := make(map[string]interface{})
+	if err := json.Unmarshal(b, &raw); err != nil {
+		t.Fatalf("Unmarshal to map: %v", err)
+	}
+
+	if raw["shardId"] != "shard-1" {
+		t.Errorf("shardId = %v, want %q", raw["shardId"], "shard-1")
+	}
+}
+
+func TestNewEvidenceIngestedEvent(t *testing.T) {
+	data := EvidenceIngestedData{
+		ContentDigest: "sha256:abc123",
+		ArtifactType:  "application/vnd.gemara.evaluation-log+json",
+		SubjectID:     "my-app-v1",
+	}
+
+	e, err := NewEvidenceIngestedEvent("complytime-gateway", "my-app-v1", data)
+	if err != nil {
+		t.Fatalf("NewEvidenceIngestedEvent: %v", err)
+	}
+
+	if e.Type() != TypeEvidenceIngested {
+		t.Errorf("Type() = %q, want %q", e.Type(), TypeEvidenceIngested)
+	}
+	if e.Source() != "complytime-gateway" {
+		t.Errorf("Source() = %q, want %q", e.Source(), "complytime-gateway")
+	}
+	if e.Subject() != "my-app-v1" {
+		t.Errorf("Subject() = %q, want %q", e.Subject(), "my-app-v1")
+	}
+	if e.SpecVersion() != cloudevents.VersionV1 {
+		t.Errorf("SpecVersion() = %q, want %q", e.SpecVersion(), cloudevents.VersionV1)
+	}
+	if e.DataContentType() != "application/json" {
+		t.Errorf("DataContentType() = %q, want %q", e.DataContentType(), "application/json")
+	}
+	if e.Time().IsZero() {
+		t.Error("Time() should not be zero")
+	}
+	if e.ID() == "" {
+		t.Error("ID() should not be empty")
+	}
+
+	var got EvidenceIngestedData
+	if err := e.DataAs(&got); err != nil {
+		t.Fatalf("DataAs: %v", err)
+	}
+	if got.ContentDigest != data.ContentDigest {
+		t.Errorf("data.ContentDigest = %q, want %q", got.ContentDigest, data.ContentDigest)
+	}
+	if got.ArtifactType != data.ArtifactType {
+		t.Errorf("data.ArtifactType = %q, want %q", got.ArtifactType, data.ArtifactType)
+	}
+	if got.SubjectID != data.SubjectID {
+		t.Errorf("data.SubjectID = %q, want %q", got.SubjectID, data.SubjectID)
+	}
+}
+
+func TestNewEvidenceIngestedEventEmptySource(t *testing.T) {
+	data := EvidenceIngestedData{
+		ContentDigest: "sha256:abc123",
+		ArtifactType:  "application/vnd.gemara.evaluation-log+json",
+		SubjectID:     "my-app-v1",
+	}
+
+	_, err := NewEvidenceIngestedEvent("", "my-app-v1", data)
+	if err == nil {
+		t.Error("expected error for empty source")
+	}
+}
+
+func TestNewEvidenceIngestedEventEmptySubject(t *testing.T) {
+	data := EvidenceIngestedData{
+		ContentDigest: "sha256:abc123",
+		ArtifactType:  "application/vnd.gemara.evaluation-log+json",
+		SubjectID:     "my-app-v1",
+	}
+
+	_, err := NewEvidenceIngestedEvent("complytime-gateway", "", data)
+	if err == nil {
+		t.Error("expected error for empty subject")
+	}
+}
+
+func TestNewEvidenceIngestedEventWireFormatRoundTrip(t *testing.T) {
+	data := EvidenceIngestedData{
+		ContentDigest: "sha256:abc123",
+		ArtifactType:  "application/vnd.gemara.evaluation-log+json",
+		StorageRef:    "ref/456",
+		SubjectID:     "my-app-v1",
+	}
+
+	e, err := NewEvidenceIngestedEvent("complytime-gateway", "my-app-v1", data)
+	if err != nil {
+		t.Fatalf("NewEvidenceIngestedEvent: %v", err)
+	}
+
+	b, err := json.Marshal(e)
+	if err != nil {
+		t.Fatalf("Marshal event: %v", err)
+	}
+
+	var restored cloudevents.Event
+	if err := json.Unmarshal(b, &restored); err != nil {
+		t.Fatalf("Unmarshal event: %v", err)
+	}
+
+	if restored.Type() != TypeEvidenceIngested {
+		t.Errorf("restored Type() = %q, want %q", restored.Type(), TypeEvidenceIngested)
+	}
+	if restored.Source() != "complytime-gateway" {
+		t.Errorf("restored Source() = %q, want %q", restored.Source(), "complytime-gateway")
+	}
+	if restored.Subject() != "my-app-v1" {
+		t.Errorf("restored Subject() = %q, want %q", restored.Subject(), "my-app-v1")
+	}
+	if restored.SpecVersion() != cloudevents.VersionV1 {
+		t.Errorf("restored SpecVersion() = %q, want %q", restored.SpecVersion(), cloudevents.VersionV1)
+	}
+
+	var got EvidenceIngestedData
+	if err := restored.DataAs(&got); err != nil {
+		t.Fatalf("restored DataAs: %v", err)
+	}
+	if got.ContentDigest != data.ContentDigest {
+		t.Errorf("ContentDigest = %q, want %q", got.ContentDigest, data.ContentDigest)
+	}
+	if got.ArtifactType != data.ArtifactType {
+		t.Errorf("ArtifactType = %q, want %q", got.ArtifactType, data.ArtifactType)
+	}
+	if got.StorageRef != data.StorageRef {
+		t.Errorf("StorageRef = %q, want %q", got.StorageRef, data.StorageRef)
+	}
+	if got.SubjectID != data.SubjectID {
+		t.Errorf("SubjectID = %q, want %q", got.SubjectID, data.SubjectID)
+	}
+}
