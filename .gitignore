@@ -59,3 +59,9 @@ megalinter-reports/
 # superpowers
 docs/superpowers
 .superpowers
+
+# Speckit — managed by specify init (recreate with: specify init --ai opencode)
+.opencode/commands/speckit.*.md
+.opencode/commands/opsx-*.md
+.opencode/skills/speckit-workflow/
+.opencode/skills/openspec-*/
