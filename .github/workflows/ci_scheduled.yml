@@ -1,0 +1,21 @@
+name: Scheduled Jobs
+
+on:
+  schedule:
+    - cron: '0 0 * * *'
+
+permissions:
+  contents: read
+  actions: none
+  id-token: none
+  security-events: none
+
+jobs:
+  call_reusable_scheduled:
+    name: OSV-Scanner and Scorecards
+    permissions:
+      contents: read
+      actions: read
+      security-events: write
+      id-token: write
+    uses: complytime/org-infra/.github/workflows/reusable_scheduled.yml@aff4817ed6f0364e7f899bfb63ec6db42e69fde2 # v0.6.0

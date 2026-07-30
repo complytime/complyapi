@@ -1,0 +1,25 @@
+# SPDX-License-Identifier: Apache-2.0
+version: '3'
+
+tasks:
+  test:
+    desc: Run all tests
+    cmds:
+      - go test ./...
+
+  lint:
+    desc: Run golangci-lint
+    cmds:
+      - golangci-lint run
+
+  vet:
+    desc: Run go vet
+    cmds:
+      - go vet ./...
+
+  check:
+    desc: Run lint and tests
+    cmds:
+      - task: lint
+      - task: vet
+      - task: test
