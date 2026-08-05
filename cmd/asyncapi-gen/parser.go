@@ -119,13 +119,11 @@ func extractEventSpec(name string, st *ast.StructType) (EventSpec, bool, error) 
 		goType := fieldGoType(field.Type)
 		required := !omitempty && !strings.HasPrefix(goType, "*")
 
-		if field.Names != nil {
-			dataFields = append(dataFields, FieldSpec{
-				JSONName: jsonName,
-				GoType:   goType,
-				Required: required,
-			})
-		}
+		dataFields = append(dataFields, FieldSpec{
+			JSONName: jsonName,
+			GoType:   goType,
+			Required: required,
+		})
 	}
 
 	if asyncapiTag == "" {

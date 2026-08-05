@@ -4,6 +4,7 @@ package main
 
 import (
 	"os"
+	"path/filepath"
 	"testing"
 )
 
@@ -97,7 +98,7 @@ type BadData struct {
 	_ struct{} ` + "`" + `asyncapi:"channel:core.bad.{id}"` + "`" + `
 	Name string ` + "`" + `json:"name"` + "`" + `
 }`
-	path := t.TempDir() + "/bad.go"
+	path := filepath.Join(t.TempDir(), "bad.go")
 	if err := os.WriteFile(path, []byte(content), 0o644); err != nil {
 		t.Fatalf("WriteFile: %v", err)
 	}
