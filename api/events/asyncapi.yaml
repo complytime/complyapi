@@ -3,6 +3,17 @@ asyncapi: 3.0.0
 info:
     title: ComplyTime API Events
     version: 0.1.0
+    description: |-
+        Event contract for the ComplyTime evidence lifecycle.
+
+        All public events use CloudEvents v1.0 envelope (JSON format).
+        The AsyncAPI spec is the source of truth for event contracts;
+        Go types in the events package must match these schemas.
+    license:
+        name: Apache-2.0
+    contact:
+        name: ComplyTime
+        url: https://github.com/complytime/complyapi
 defaultContentType: application/cloudevents+json
 servers:
     nats:

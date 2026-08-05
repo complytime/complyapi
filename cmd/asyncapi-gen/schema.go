@@ -21,8 +21,22 @@ type AsyncAPIDoc struct {
 
 // Info holds document metadata.
 type Info struct {
-	Title   string `yaml:"title"`
-	Version string `yaml:"version"`
+	Title       string   `yaml:"title"`
+	Version     string   `yaml:"version"`
+	Description string   `yaml:"description,omitempty"`
+	License     *License `yaml:"license,omitempty"`
+	Contact     *Contact `yaml:"contact,omitempty"`
+}
+
+// License holds the license information for the AsyncAPI document.
+type License struct {
+	Name string `yaml:"name"`
+}
+
+// Contact holds the contact information for the AsyncAPI document.
+type Contact struct {
+	Name string `yaml:"name,omitempty"`
+	URL  string `yaml:"url,omitempty"`
 }
 
 // Server describes a NATS server.
@@ -97,10 +111,21 @@ type Schema struct {
 }
 
 // BuildDoc constructs an AsyncAPIDoc from the given specs and document metadata.
-func BuildDoc(specs []EventSpec, title, version, serverURL string) AsyncAPIDoc {
+func BuildDoc(specs []EventSpec, title, version, description, licenseName, contactName, contactURL, serverURL string) AsyncAPIDoc {
+	info := Info{Title: title, Version: version}
+	if description != "" {
+		info.Description = description
+	}
+	if licenseName != "" {
+		info.License = &License{Name: licenseName}
+	}
+	if contactName != "" || contactURL != "" {
+		info.Contact = &Contact{Name: contactName, URL: contactURL}
+	}
+
 	doc := AsyncAPIDoc{
 		AsyncAPI:           "3.0.0",
-		Info:               Info{Title: title, Version: version},
+		Info:               info,
 		DefaultContentType: "application/cloudevents+json",
 		Servers:            buildServers(serverURL),
 		Channels:           make(map[string]Channel),

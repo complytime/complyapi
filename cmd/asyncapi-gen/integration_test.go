@@ -23,7 +23,9 @@ func TestIntegration_GeneratedMatchesCommitted(t *testing.T) {
 		t.Fatalf("ParseFile: %v", err)
 	}
 
-	doc := BuildDoc(specs, "ComplyTime API Events", "0.1.0", "nats://localhost:4222")
+	doc := BuildDoc(specs, "ComplyTime API Events", "0.1.0",
+		"Event contract for the ComplyTime evidence lifecycle.\n\nAll public events use CloudEvents v1.0 envelope (JSON format).\nThe AsyncAPI spec is the source of truth for event contracts;\nGo types in the events package must match these schemas.",
+		"Apache-2.0", "ComplyTime", "https://github.com/complytime/complyapi", "nats://localhost:4222")
 
 	outPath := filepath.Join(t.TempDir(), "asyncapi.yaml")
 	if err := WriteYAML(doc, outPath); err != nil {

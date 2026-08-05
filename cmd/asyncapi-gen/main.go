@@ -16,6 +16,10 @@ func main() {
 	title := flag.String("title", "", "AsyncAPI document title (required)")
 	version := flag.String("version", "", "AsyncAPI document version (required)")
 	server := flag.String("server", "", "NATS server URL, e.g. nats://localhost:4222 (required)")
+	description := flag.String("description", "", "AsyncAPI document description (optional)")
+	licenseName := flag.String("license", "", "License name, e.g. Apache-2.0 (optional)")
+	contactName := flag.String("contact-name", "", "Contact name (optional)")
+	contactURL := flag.String("contact-url", "", "Contact URL (optional)")
 	flag.Parse()
 
 	if *input == "" || *output == "" || *title == "" || *version == "" || *server == "" {
@@ -34,7 +38,7 @@ func main() {
 		os.Exit(1)
 	}
 
-	doc := BuildDoc(specs, *title, *version, *server)
+	doc := BuildDoc(specs, *title, *version, *description, *licenseName, *contactName, *contactURL, *server)
 
 	if err := WriteYAML(doc, *output); err != nil {
 		fmt.Fprintf(os.Stderr, "asyncapi-gen: write error: %v\n", err)

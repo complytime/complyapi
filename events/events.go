@@ -4,7 +4,7 @@
 // evidence lifecycle.
 package events
 
-//go:generate go run ../cmd/asyncapi-gen -input ./events.go -output ../api/events/asyncapi.yaml -title "ComplyTime API Events" -version 0.1.0 -server nats://localhost:4222
+//go:generate go run ../cmd/asyncapi-gen -input ./events.go -output ../api/events/asyncapi.yaml -title "ComplyTime API Events" -version 0.1.0 -description "Event contract for the ComplyTime evidence lifecycle.\n\nAll public events use CloudEvents v1.0 envelope (JSON format).\nThe AsyncAPI spec is the source of truth for event contracts;\nGo types in the events package must match these schemas." -license Apache-2.0 -contact-name ComplyTime -contact-url https://github.com/complytime/complyapi -server nats://localhost:4222
 
 import (
 	"errors"

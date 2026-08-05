@@ -25,7 +25,7 @@ func singleSpec() EventSpec {
 }
 
 func TestBuildDoc_InfoFields(t *testing.T) {
-	doc := BuildDoc([]EventSpec{singleSpec()}, "Test API", "1.0.0", "nats://localhost:4222")
+	doc := BuildDoc([]EventSpec{singleSpec()}, "Test API", "1.0.0", "", "", "", "", "nats://localhost:4222")
 
 	if doc.AsyncAPI != "3.0.0" {
 		t.Errorf("AsyncAPI = %q, want %q", doc.AsyncAPI, "3.0.0")
@@ -42,7 +42,7 @@ func TestBuildDoc_InfoFields(t *testing.T) {
 }
 
 func TestBuildDoc_ServerURL(t *testing.T) {
-	doc := BuildDoc([]EventSpec{singleSpec()}, "Test API", "1.0.0", "nats://localhost:4222")
+	doc := BuildDoc([]EventSpec{singleSpec()}, "Test API", "1.0.0", "", "", "", "", "nats://localhost:4222")
 
 	if len(doc.Servers) != 1 {
 		t.Fatalf("len(Servers) = %d, want 1", len(doc.Servers))
@@ -57,7 +57,7 @@ func TestBuildDoc_ServerURL(t *testing.T) {
 }
 
 func TestBuildDoc_Channel(t *testing.T) {
-	doc := BuildDoc([]EventSpec{singleSpec()}, "Test API", "1.0.0", "nats://localhost:4222")
+	doc := BuildDoc([]EventSpec{singleSpec()}, "Test API", "1.0.0", "", "", "", "", "nats://localhost:4222")
 
 	ch, ok := doc.Channels["widgetCreated"]
 	if !ok {
@@ -76,7 +76,7 @@ func TestBuildDoc_Channel(t *testing.T) {
 }
 
 func TestBuildDoc_Operations(t *testing.T) {
-	doc := BuildDoc([]EventSpec{singleSpec()}, "Test API", "1.0.0", "nats://localhost:4222")
+	doc := BuildDoc([]EventSpec{singleSpec()}, "Test API", "1.0.0", "", "", "", "", "nats://localhost:4222")
 
 	sendOp, ok := doc.Operations["publishWidgetCreated"]
 	if !ok {
@@ -102,7 +102,7 @@ func TestBuildDoc_Operations(t *testing.T) {
 }
 
 func TestBuildDoc_DataSchemaFields(t *testing.T) {
-	doc := BuildDoc([]EventSpec{singleSpec()}, "Test API", "1.0.0", "nats://localhost:4222")
+	doc := BuildDoc([]EventSpec{singleSpec()}, "Test API", "1.0.0", "", "", "", "", "nats://localhost:4222")
 
 	dataSchema, ok := doc.Components.Schemas["WidgetCreatedData"]
 	if !ok {
@@ -137,7 +137,7 @@ func TestBuildDoc_DataSchemaFields(t *testing.T) {
 }
 
 func TestBuildDoc_CloudEventsEnvelope(t *testing.T) {
-	doc := BuildDoc([]EventSpec{singleSpec()}, "Test API", "1.0.0", "nats://localhost:4222")
+	doc := BuildDoc([]EventSpec{singleSpec()}, "Test API", "1.0.0", "", "", "", "", "nats://localhost:4222")
 
 	env, ok := doc.Components.Schemas["WidgetCreatedCloudEvent"]
 	if !ok {
@@ -162,7 +162,7 @@ func TestBuildDoc_CloudEventsEnvelope(t *testing.T) {
 }
 
 func TestBuildDoc_NATSBinding(t *testing.T) {
-	doc := BuildDoc([]EventSpec{singleSpec()}, "Test API", "1.0.0", "nats://localhost:4222")
+	doc := BuildDoc([]EventSpec{singleSpec()}, "Test API", "1.0.0", "", "", "", "", "nats://localhost:4222")
 
 	op, ok := doc.Operations["publishWidgetCreated"]
 	if !ok {
