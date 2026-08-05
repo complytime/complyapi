@@ -5,6 +5,7 @@ go 1.26.5
 require (
 	github.com/cloudevents/sdk-go/v2 v2.16.2
 	github.com/google/uuid v1.6.0
+	gopkg.in/yaml.v3 v3.0.1
 )
 
 require (
@@ -13,5 +14,4 @@ require (
 	github.com/modern-go/reflect2 v1.0.2 // indirect
 	go.uber.org/multierr v1.11.0 // indirect
 	go.uber.org/zap v1.27.0 // indirect
-	gopkg.in/yaml.v3 v3.0.1 // indirect
 )
