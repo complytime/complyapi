@@ -4,6 +4,8 @@
 // evidence lifecycle.
 package events
 
+//go:generate go run ../cmd/asyncapi-gen -input ./events.go -output ../api/events/asyncapi.yaml -title "ComplyTime API Events" -version 0.1.0 -server nats://localhost:4222
+
 import (
 	"errors"
 	"time"
@@ -18,6 +20,9 @@ const TypeEvidenceIngested = "dev.complytime.evidence.ingested"
 // EvidenceIngestedData is the CloudEvents data payload for
 // evidence.ingested events.
 type EvidenceIngestedData struct {
+	//nolint:unused
+	_ struct{} `asyncapi:"channel:core.evidence.ingested.{subjectId},param:subjectId=The compliance subject identifier,stream:EVIDENCE,type:dev.complytime.evidence.ingested,send:Published when evidence is accepted for processing,receive:Consume evidence-ingested events"`
+
 	ContentDigest string  `json:"contentDigest"`
 	ArtifactType  string  `json:"artifactType"`
 	StorageRef    string  `json:"storageRef,omitempty"`

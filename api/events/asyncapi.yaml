@@ -1,122 +1,96 @@
 # SPDX-License-Identifier: Apache-2.0
 asyncapi: 3.0.0
 info:
-  title: ComplyTime API Events
-  version: 0.1.0
-  description: |
-    Event contract for the ComplyTime evidence lifecycle.
-
-    All public events use CloudEvents v1.0 envelope (JSON format).
-    The AsyncAPI spec is the source of truth for event contracts;
-    Go types in the events package must match these schemas.
-  license:
-    name: Apache-2.0
-  contact:
-    name: ComplyTime
-    url: https://github.com/complytime/complyapi
-
+    title: ComplyTime API Events
+    version: 0.1.0
 defaultContentType: application/cloudevents+json
-
+servers:
+    nats:
+        host: localhost:4222
+        protocol: nats
 channels:
-  evidenceIngested:
-    address: core.evidence.ingested.{subjectId}
-    description: |
-      Published when evidence is ingested, before sealing.
-    parameters:
-      subjectId:
-        description: The compliance subject identifier (e.g. `my-app-v1`)
-    messages:
-      evidenceIngested:
-        $ref: '#/components/messages/evidenceIngested'
-
-operations:
-  publishEvidenceIngested:
-    action: send
-    channel:
-      $ref: '#/channels/evidenceIngested'
-    summary: Published when evidence is accepted for processing.
-
-  consumeEvidenceIngested:
-    action: receive
-    channel:
-      $ref: '#/channels/evidenceIngested'
-    summary: Consume evidence-ingested events.
-
-components:
-  messages:
     evidenceIngested:
-      name: EvidenceIngested
-      title: Evidence Ingested
-      contentType: application/cloudevents+json
-      payload:
-        $ref: '#/components/schemas/EvidenceIngestedCloudEvent'
-
-  schemas:
-    EvidenceIngestedCloudEvent:
-      type: object
-      description: CloudEvents v1.0 envelope for evidence.ingested
-      required:
-        - specversion
-        - id
-        - type
-        - source
-        - subject
-        - time
-        - datacontenttype
-        - data
-      properties:
-        specversion:
-          type: string
-          const: "1.0"
-        id:
-          type: string
-          format: uuid
-        type:
-          type: string
-          const: dev.complytime.evidence.ingested
-        source:
-          type: string
-          description: URI identifying the producing service
-          examples:
-            - complytime-gateway
-        subject:
-          type: string
-          description: The compliance subject identifier
-        time:
-          type: string
-          format: date-time
-        datacontenttype:
-          type: string
-          const: application/json
-        data:
-          $ref: '#/components/schemas/EvidenceIngestedData'
-
-    EvidenceIngestedData:
-      type: object
-      description: Payload for evidence.ingested events.
-      required:
-        - contentDigest
-        - artifactType
-        - subjectId
-      properties:
-        contentDigest:
-          type: string
-          description: SHA-256 digest of the evidence artifact
-          examples:
-            - sha256:abc123...
-        artifactType:
-          type: string
-          description: Gemara artifact type
-          examples:
-            - application/vnd.gemara.evaluation-log+json
-        storageRef:
-          type: string
-          description: Internal storage reference
-        subjectId:
-          type: string
-          description: Compliance subject identifier
-          examples:
-            - my-app-v1
-        shardId:
-          type: string
-          description: Subject shard identifier (null when sharding is not configured)
+        address: core.evidence.ingested.{subjectId}
+        parameters:
+            subjectId:
+                description: The compliance subject identifier
+        messages:
+            EvidenceIngested:
+                $ref: '#/components/messages/EvidenceIngested'
+operations:
+    consumeEvidenceIngested:
+        action: receive
+        summary: Consume evidence-ingested events
+        channel:
+            $ref: '#/channels/evidenceIngested'
+    publishEvidenceIngested:
+        action: send
+        summary: Published when evidence is accepted for processing
+        channel:
+            $ref: '#/channels/evidenceIngested'
+        bindings:
+            nats:
+                stream: EVIDENCE
+                bindingVersion: latest
+components:
+    messages:
+        EvidenceIngested:
+            name: EvidenceIngested
+            title: Evidence Ingested
+            contentType: application/cloudevents+json
+            payload:
+                $ref: '#/components/schemas/EvidenceIngestedCloudEvent'
+    schemas:
+        EvidenceIngestedCloudEvent:
+            type: object
+            description: CloudEvents v1.0 envelope for dev.complytime.evidence.ingested
+            required:
+                - specversion
+                - id
+                - type
+                - source
+                - subject
+                - time
+                - datacontenttype
+                - data
+            properties:
+                data:
+                    $ref: '#/components/schemas/EvidenceIngestedData'
+                datacontenttype:
+                    type: string
+                    const: application/json
+                id:
+                    type: string
+                    format: uuid
+                source:
+                    type: string
+                    description: URI identifying the producing service
+                specversion:
+                    type: string
+                    const: "1.0"
+                subject:
+                    type: string
+                    description: The compliance subject identifier
+                time:
+                    type: string
+                    format: date-time
+                type:
+                    type: string
+                    const: dev.complytime.evidence.ingested
+        EvidenceIngestedData:
+            type: object
+            required:
+                - contentDigest
+                - artifactType
+                - subjectId
+            properties:
+                artifactType:
+                    type: string
+                contentDigest:
+                    type: string
+                shardId:
+                    type: string
+                storageRef:
+                    type: string
+                subjectId:
+                    type: string
