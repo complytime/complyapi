@@ -96,6 +96,9 @@ func TestBuildDoc_Operations(t *testing.T) {
 	if recvOp.Action != "receive" {
 		t.Errorf("receive action = %q, want %q", recvOp.Action, "receive")
 	}
+	if recvOp.Bindings.NATS.Stream != "" {
+		t.Errorf("receive op NATS stream = %q, want empty (no binding)", recvOp.Bindings.NATS.Stream)
+	}
 }
 
 func TestBuildDoc_DataSchemaFields(t *testing.T) {
