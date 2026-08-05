@@ -63,8 +63,11 @@ type OperationBinding struct {
 }
 
 // NATSOperationBinding holds NATS JetStream stream metadata.
+// Stream is serialised as the AsyncAPI extension field x-stream because the
+// official NATS binding 0.1.0 schema does not define a stream property;
+// x-prefixed extensions are accepted by the AsyncAPI validator.
 type NATSOperationBinding struct {
-	Stream         string `yaml:"stream,omitempty"`
+	Stream         string `yaml:"x-stream,omitempty"`
 	BindingVersion string `yaml:"bindingVersion,omitempty"`
 }
 
@@ -134,7 +137,7 @@ func BuildDoc(specs []EventSpec, title, version, serverURL string) AsyncAPIDoc {
 			Summary: spec.SendSummary,
 			Channel: Ref{Ref: fmt.Sprintf("#/channels/%s", chKey)},
 			Bindings: OperationBinding{
-				NATS: NATSOperationBinding{Stream: spec.Stream, BindingVersion: "latest"},
+				NATS: NATSOperationBinding{Stream: spec.Stream, BindingVersion: "0.1.0"},
 			},
 		}
 

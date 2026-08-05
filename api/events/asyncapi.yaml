@@ -30,8 +30,8 @@ operations:
             $ref: '#/channels/evidenceIngested'
         bindings:
             nats:
-                stream: EVIDENCE
-                bindingVersion: latest
+                x-stream: EVIDENCE
+                bindingVersion: 0.1.0
 components:
     messages:
         EvidenceIngested:

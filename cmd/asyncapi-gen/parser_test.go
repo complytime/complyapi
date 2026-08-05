@@ -99,7 +99,7 @@ type BadData struct {
 	Name string ` + "`" + `json:"name"` + "`" + `
 }`
 	path := filepath.Join(t.TempDir(), "bad.go")
-	if err := os.WriteFile(path, []byte(content), 0o644); err != nil {
+	if err := os.WriteFile(path, []byte(content), 0o644); err != nil { //nolint:gosec // 0o644 is correct for test fixture files (SC-005)
 		t.Fatalf("WriteFile: %v", err)
 	}
 	_, err := ParseFile(path)

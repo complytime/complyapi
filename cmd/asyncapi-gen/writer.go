@@ -20,7 +20,7 @@ func WriteYAML(doc AsyncAPIDoc, path string) error {
 	header := "# SPDX-License-Identifier: Apache-2.0\n"
 	out := append([]byte(header), b...)
 
-	if err := os.WriteFile(path, out, 0o644); err != nil {
+	if err := os.WriteFile(path, out, 0o644); err != nil { //nolint:gosec // 0o644 is correct for generated YAML output files (SC-005)
 		return fmt.Errorf("writing output file: %w", err)
 	}
 	return nil

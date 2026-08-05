@@ -17,9 +17,20 @@ tasks:
     cmds:
       - go vet ./...
 
+  generate:
+    desc: Regenerate derived artifacts (asyncapi.yaml)
+    cmds:
+      - go generate ./events/...
+
+  asyncapi-lint:
+    desc: Validate asyncapi.yaml with the AsyncAPI CLI
+    cmds:
+      - npx --yes @asyncapi/cli validate api/events/asyncapi.yaml
+
   check:
-    desc: Run lint and tests
+    desc: Run lint, vet, tests, and asyncapi validation
     cmds:
       - task: lint
       - task: vet
       - task: test
+      - task: asyncapi-lint
