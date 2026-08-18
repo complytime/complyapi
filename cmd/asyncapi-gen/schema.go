@@ -231,7 +231,11 @@ func buildDataSchema(spec EventSpec) Schema {
 	var required []string
 
 	for _, f := range spec.Fields {
-		props[f.JSONName] = Schema{Type: goTypeToJSONSchema(f.GoType)}
+		s := Schema{Type: goTypeToJSONSchema(f.GoType)}
+		if f.Description != "" {
+			s.Description = f.Description
+		}
+		props[f.JSONName] = s
 		if f.Required {
 			required = append(required, f.JSONName)
 		}

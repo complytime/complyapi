@@ -26,9 +26,10 @@ type EventSpec struct {
 
 // FieldSpec describes one data field extracted from a struct.
 type FieldSpec struct {
-	JSONName string
-	GoType   string // e.g. "string", "*string", "int"
-	Required bool   // false when omitempty or pointer type
+	JSONName    string
+	GoType      string // e.g. "string", "*string", "int"
+	Required    bool   // false when omitempty or pointer type
+	Description string // from asyncapi-field:"description:..." tag
 }
 
 // ParseFile parses the Go source file at path and returns one EventSpec
@@ -119,10 +120,13 @@ func extractEventSpec(name string, st *ast.StructType) (EventSpec, bool, error) 
 		goType := fieldGoType(field.Type)
 		required := !omitempty && !strings.HasPrefix(goType, "*")
 
+		description := extractFieldDescription(tag)
+
 		dataFields = append(dataFields, FieldSpec{
-			JSONName: jsonName,
-			GoType:   goType,
-			Required: required,
+			JSONName:    jsonName,
+			GoType:      goType,
+			Required:    required,
+			Description: description,
 		})
 	}
 
@@ -150,6 +154,22 @@ func fieldGoType(expr ast.Expr) string {
 	default:
 		return "interface{}"
 	}
+}
+
+// extractFieldDescription extracts the description value from an
+// asyncapi-field struct tag. The tag format is:
+//
+//	asyncapi-field:"description:some text here"
+func extractFieldDescription(tag reflect.StructTag) string {
+	val := tag.Get("asyncapi-field")
+	if val == "" {
+		return ""
+	}
+	const prefix = "description:"
+	if strings.HasPrefix(val, prefix) {
+		return val[len(prefix):]
+	}
+	return ""
 }
 
 // parseAsyncAPITag parses a comma-separated key:value asyncapi tag string.

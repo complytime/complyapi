@@ -57,7 +57,7 @@ func TestParseFile_ReturnsFields(t *testing.T) {
 		}
 	}
 
-	// widgetId — required (no omitempty, not pointer)
+	// widgetId — required (no omitempty, not pointer), has description
 	widgetID := findField(fields, "widgetId")
 	if widgetID == nil {
 		t.Fatal("field widgetId not found")
@@ -68,14 +68,20 @@ func TestParseFile_ReturnsFields(t *testing.T) {
 	if widgetID.GoType != "string" {
 		t.Errorf("widgetId GoType = %q, want %q", widgetID.GoType, "string")
 	}
+	if widgetID.Description != "Unique widget identifier" {
+		t.Errorf("widgetId Description = %q, want %q", widgetID.Description, "Unique widget identifier")
+	}
 
-	// tag — optional (omitempty)
+	// tag — optional (omitempty), no description tag
 	tag := findField(fields, "tag")
 	if tag == nil {
 		t.Fatal("field tag not found")
 	}
 	if tag.Required {
 		t.Error("tag should not be required (omitempty)")
+	}
+	if tag.Description != "" {
+		t.Errorf("tag Description = %q, want empty (no asyncapi-field tag)", tag.Description)
 	}
 
 	// parentId — optional (pointer)

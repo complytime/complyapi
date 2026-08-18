@@ -6,8 +6,8 @@ package testdata
 type WidgetCreatedData struct {
 	_ struct{} `asyncapi:"channel:core.widget.created.{ownerId},param:ownerId=The widget owner identifier,stream:WIDGETS,type:dev.example.widget.created,send:Published when a widget is created,receive:Consume widget-created events"`
 
-	WidgetID string  `json:"widgetId"`
+	WidgetID string  `json:"widgetId" asyncapi-field:"description:Unique widget identifier"`
 	Name     string  `json:"name"`
 	Tag      string  `json:"tag,omitempty"`
-	ParentID *string `json:"parentId,omitempty"`
+	ParentID *string `json:"parentId,omitempty" asyncapi-field:"description:Parent widget ID"`
 }

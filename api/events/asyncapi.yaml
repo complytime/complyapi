@@ -7,8 +7,8 @@ info:
         Event contract for the ComplyTime evidence lifecycle.
 
         All public events use CloudEvents v1.0 envelope (JSON format).
-        The AsyncAPI spec is the source of truth for event contracts;
-        Go types in the events package must match these schemas.
+        This spec is generated from Go types in the events package via cmd/asyncapi-gen.
+        Do not edit manually — run 'go generate ./events/...' to regenerate.
     license:
         name: Apache-2.0
     contact:
@@ -97,11 +97,16 @@ components:
             properties:
                 artifactType:
                     type: string
+                    description: Gemara artifact type
                 contentDigest:
                     type: string
+                    description: SHA-256 digest of the evidence artifact
                 shardId:
                     type: string
+                    description: Subject shard identifier (null when sharding is not configured)
                 storageRef:
                     type: string
+                    description: Internal storage reference
                 subjectId:
                     type: string
+                    description: Compliance subject identifier

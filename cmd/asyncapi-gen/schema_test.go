@@ -16,10 +16,10 @@ func singleSpec() EventSpec {
 		SendSummary: "Published when a widget is created",
 		RecvSummary: "Consume widget-created events",
 		Fields: []FieldSpec{
-			{JSONName: "widgetId", GoType: "string", Required: true},
+			{JSONName: "widgetId", GoType: "string", Required: true, Description: "Unique widget identifier"},
 			{JSONName: "name", GoType: "string", Required: true},
 			{JSONName: "tag", GoType: "string", Required: false},
-			{JSONName: "parentId", GoType: "*string", Required: false},
+			{JSONName: "parentId", GoType: "*string", Required: false, Description: "Parent widget ID"},
 		},
 	}
 }
@@ -115,6 +115,18 @@ func TestBuildDoc_DataSchemaFields(t *testing.T) {
 	}
 	if widgetIDProp.Type != "string" {
 		t.Errorf("widgetId type = %q, want %q", widgetIDProp.Type, "string")
+	}
+	if widgetIDProp.Description != "Unique widget identifier" {
+		t.Errorf("widgetId description = %q, want %q", widgetIDProp.Description, "Unique widget identifier")
+	}
+
+	// name has no description tag — should be empty
+	nameProp, ok := dataSchema.Properties["name"]
+	if !ok {
+		t.Fatal("property name not found")
+	}
+	if nameProp.Description != "" {
+		t.Errorf("name description = %q, want empty", nameProp.Description)
 	}
 
 	// widgetId and name must be in required list

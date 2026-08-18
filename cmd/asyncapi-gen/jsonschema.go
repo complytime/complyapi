@@ -1,0 +1,115 @@
+// SPDX-License-Identifier: Apache-2.0
+
+package main
+
+import (
+	"encoding/json"
+	"fmt"
+	"os"
+	"path/filepath"
+)
+
+// JSONSchema represents a JSON Schema document using ordered map entries
+// to produce deterministic output via encoding/json.
+type JSONSchema = map[string]any
+
+// BuildDataJSONSchema builds a standalone JSON Schema document for the
+// data payload of an event spec. The schema uses JSON Schema Draft 2020-12.
+func BuildDataJSONSchema(spec EventSpec) JSONSchema {
+	properties := make(JSONSchema)
+	var required []string
+
+	for _, f := range spec.Fields {
+		prop := JSONSchema{"type": goTypeToJSONSchema(f.GoType)}
+		if f.Description != "" {
+			prop["description"] = f.Description
+		}
+		properties[f.JSONName] = prop
+		if f.Required {
+			required = append(required, f.JSONName)
+		}
+	}
+
+	schema := JSONSchema{
+		"$schema":    "https://json-schema.org/draft/2020-12/schema",
+		"$id":        fmt.Sprintf("%s.schema.json", spec.StructName),
+		"type":       "object",
+		"properties": properties,
+	}
+	if len(required) > 0 {
+		schema["required"] = required
+	}
+
+	return schema
+}
+
+// BuildEnvelopeJSONSchema builds a standalone JSON Schema document for
+// the CloudEvents v1.0 envelope wrapping the data payload. The data
+// field references the data schema by relative $ref.
+func BuildEnvelopeJSONSchema(spec EventSpec) JSONSchema {
+	envelopeName := envelopeSchemaName(spec.StructName)
+	dataSchemaFile := spec.StructName + ".schema.json"
+
+	properties := JSONSchema{
+		"specversion":     JSONSchema{"type": "string", "const": "1.0"},
+		"id":              JSONSchema{"type": "string", "format": "uuid"},
+		"type":            JSONSchema{"type": "string", "const": spec.CEType},
+		"source":          JSONSchema{"type": "string", "description": "URI identifying the producing service"},
+		"subject":         JSONSchema{"type": "string", "description": "The compliance subject identifier"},
+		"time":            JSONSchema{"type": "string", "format": "date-time"},
+		"datacontenttype": JSONSchema{"type": "string", "const": "application/json"},
+		"data":            JSONSchema{"$ref": dataSchemaFile},
+	}
+
+	return JSONSchema{
+		"$schema":     "https://json-schema.org/draft/2020-12/schema",
+		"$id":         fmt.Sprintf("%s.schema.json", envelopeName),
+		"type":        "object",
+		"description": fmt.Sprintf("CloudEvents v1.0 envelope for %s", spec.CEType),
+		"required":    []string{"specversion", "id", "type", "source", "subject", "time", "datacontenttype", "data"},
+		"properties":  properties,
+	}
+}
+
+// WriteJSONSchemas writes the envelope and data JSON Schema files for
+// each event spec to the given directory. Creates the directory if it
+// does not exist.
+func WriteJSONSchemas(specs []EventSpec, dir string) error {
+	if err := os.MkdirAll(dir, 0o755); err != nil {
+		return fmt.Errorf("creating schemas directory: %w", err)
+	}
+
+	for _, spec := range specs {
+		dataSchema := BuildDataJSONSchema(spec)
+		if err := writeJSON(dataSchema, filepath.Join(dir, spec.StructName+".schema.json")); err != nil {
+			return err
+		}
+
+		envName := envelopeSchemaName(spec.StructName)
+		envSchema := BuildEnvelopeJSONSchema(spec)
+		if err := writeJSON(envSchema, filepath.Join(dir, envName+".schema.json")); err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
+// envelopeSchemaName converts "EvidenceIngestedData" to "EvidenceIngestedCloudEvent".
+func envelopeSchemaName(structName string) string {
+	return messageKey(structName) + "CloudEvent"
+}
+
+// writeJSON marshals v to indented JSON and writes it to path.
+func writeJSON(v any, path string) error {
+	b, err := json.MarshalIndent(v, "", "  ")
+	if err != nil {
+		return fmt.Errorf("marshaling JSON schema: %w", err)
+	}
+	b = append(b, '\n')
+
+	if err := os.WriteFile(path, b, 0o644); err != nil { //nolint:gosec // 0o644 is correct for generated schema files (SC-005)
+		return fmt.Errorf("writing %s: %w", path, err)
+	}
+	return nil
+}

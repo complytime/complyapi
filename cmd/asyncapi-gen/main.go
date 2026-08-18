@@ -20,6 +20,7 @@ func main() {
 	licenseName := flag.String("license", "", "License name, e.g. Apache-2.0 (optional)")
 	contactName := flag.String("contact-name", "", "Contact name (optional)")
 	contactURL := flag.String("contact-url", "", "Contact URL (optional)")
+	schemasDir := flag.String("schemas-dir", "", "Directory to write JSON Schema files (optional)")
 	flag.Parse()
 
 	if *input == "" || *output == "" || *title == "" || *version == "" || *server == "" {
@@ -43,6 +44,14 @@ func main() {
 	if err := WriteYAML(doc, *output); err != nil {
 		fmt.Fprintf(os.Stderr, "asyncapi-gen: write error: %v\n", err)
 		os.Exit(1)
+	}
+
+	if *schemasDir != "" {
+		if err := WriteJSONSchemas(specs, *schemasDir); err != nil {
+			fmt.Fprintf(os.Stderr, "asyncapi-gen: schema write error: %v\n", err)
+			os.Exit(1)
+		}
+		fmt.Printf("asyncapi-gen: wrote JSON schemas to %s\n", *schemasDir)
 	}
 
 	fmt.Printf("asyncapi-gen: wrote %s (%d event(s))\n", *output, len(specs))

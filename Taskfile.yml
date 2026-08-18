@@ -25,7 +25,8 @@ tasks:
   asyncapi-lint:
     desc: Validate asyncapi.yaml with the AsyncAPI CLI
     cmds:
-      - npx --yes @asyncapi/cli validate api/events/asyncapi.yaml
+      # Pinned to 2.16.1 — latest has broken npm dependency (@asyncapi/studio-ui@0.5.0 404)
+      - npx --yes @asyncapi/cli@2.16.1 validate api/events/asyncapi.yaml
 
   check:
     desc: Run lint, vet, tests, and asyncapi validation

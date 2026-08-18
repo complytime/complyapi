@@ -1,0 +1,49 @@
+{
+  "$id": "EvidenceIngestedCloudEvent.schema.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "description": "CloudEvents v1.0 envelope for dev.complytime.evidence.ingested",
+  "properties": {
+    "data": {
+      "$ref": "EvidenceIngestedData.schema.json"
+    },
+    "datacontenttype": {
+      "const": "application/json",
+      "type": "string"
+    },
+    "id": {
+      "format": "uuid",
+      "type": "string"
+    },
+    "source": {
+      "description": "URI identifying the producing service",
+      "type": "string"
+    },
+    "specversion": {
+      "const": "1.0",
+      "type": "string"
+    },
+    "subject": {
+      "description": "The compliance subject identifier",
+      "type": "string"
+    },
+    "time": {
+      "format": "date-time",
+      "type": "string"
+    },
+    "type": {
+      "const": "dev.complytime.evidence.ingested",
+      "type": "string"
+    }
+  },
+  "required": [
+    "specversion",
+    "id",
+    "type",
+    "source",
+    "subject",
+    "time",
+    "datacontenttype",
+    "data"
+  ],
+  "type": "object"
+}
