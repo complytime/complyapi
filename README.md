@@ -82,6 +82,14 @@ task check
 4. Add a constructor function (e.g., `NewYourEventEvent()`) following the
    existing pattern.
 
+### Evolving an event contract
+
+Before changing an existing event's payload, read the
+[Event Versioning Strategy](docs/versioning.md). It defines which field to bump
+for additive versus breaking changes (CloudEvents `type` and AsyncAPI
+`info.version`), and why the NATS subject stays stable so subscribers never
+re-subscribe.
+
 ## License
 
 [Apache-2.0](LICENSE)
