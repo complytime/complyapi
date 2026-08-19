@@ -7,52 +7,77 @@ package main
 import (
 	"flag"
 	"fmt"
+	"io"
 	"os"
 )
 
-func main() {
-	input := flag.String("input", "", "Path to Go source file containing annotated event structs (required)")
-	output := flag.String("output", "", "Path to write the generated asyncapi.yaml (required)")
-	title := flag.String("title", "", "AsyncAPI document title (required)")
-	version := flag.String("version", "", "AsyncAPI document version (required)")
-	server := flag.String("server", "", "NATS server URL, e.g. nats://localhost:4222 (required)")
-	description := flag.String("description", "", "AsyncAPI document description (optional)")
-	licenseName := flag.String("license", "", "License name, e.g. Apache-2.0 (optional)")
-	contactName := flag.String("contact-name", "", "Contact name (optional)")
-	contactURL := flag.String("contact-url", "", "Contact URL (optional)")
-	schemasDir := flag.String("schemas-dir", "", "Directory to write JSON Schema files (optional)")
-	flag.Parse()
+// Options holds the parsed command-line flags for asyncapi-gen.
+type Options struct {
+	Input       string
+	Output      string
+	Title       string
+	Version     string
+	Server      string
+	Description string
+	LicenseName string
+	ContactName string
+	ContactURL  string
+	SchemasDir  string
+}
 
-	if *input == "" || *output == "" || *title == "" || *version == "" || *server == "" {
-		fmt.Fprintln(os.Stderr, "asyncapi-gen: all flags are required: -input -output -title -version -server")
-		flag.Usage()
+func main() {
+	opts := parseFlags(os.Args[1:])
+	if err := run(opts, os.Stdout, os.Stderr); err != nil {
+		fmt.Fprintf(os.Stderr, "asyncapi-gen: %v\n", err)
 		os.Exit(1)
 	}
+}
 
-	specs, err := ParseFile(*input)
+// parseFlags parses command-line arguments into Options.
+func parseFlags(args []string) Options {
+	fs := flag.NewFlagSet("asyncapi-gen", flag.ExitOnError)
+	var opts Options
+	fs.StringVar(&opts.Input, "input", "", "Path to Go source file containing annotated event structs (required)")
+	fs.StringVar(&opts.Output, "output", "", "Path to write the generated asyncapi.yaml (required)")
+	fs.StringVar(&opts.Title, "title", "", "AsyncAPI document title (required)")
+	fs.StringVar(&opts.Version, "version", "", "AsyncAPI document version (required)")
+	fs.StringVar(&opts.Server, "server", "", "NATS server URL, e.g. nats://localhost:4222 (required)")
+	fs.StringVar(&opts.Description, "description", "", "AsyncAPI document description (optional)")
+	fs.StringVar(&opts.LicenseName, "license", "", "License name, e.g. Apache-2.0 (optional)")
+	fs.StringVar(&opts.ContactName, "contact-name", "", "Contact name (optional)")
+	fs.StringVar(&opts.ContactURL, "contact-url", "", "Contact URL (optional)")
+	fs.StringVar(&opts.SchemasDir, "schemas-dir", "", "Directory to write JSON Schema files (optional)")
+	_ = fs.Parse(args)
+	return opts
+}
+
+// run executes the asyncapi-gen pipeline with the given options.
+func run(opts Options, stdout, stderr io.Writer) error {
+	if opts.Input == "" || opts.Output == "" || opts.Title == "" || opts.Version == "" || opts.Server == "" {
+		return fmt.Errorf("required flags missing: -input -output -title -version -server")
+	}
+
+	specs, err := ParseFile(opts.Input)
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "asyncapi-gen: parse error: %v\n", err)
-		os.Exit(1)
+		return fmt.Errorf("parse error: %w", err)
 	}
 	if len(specs) == 0 {
-		fmt.Fprintln(os.Stderr, "asyncapi-gen: no annotated structs found in input file")
-		os.Exit(1)
+		return fmt.Errorf("no annotated structs found in %s", opts.Input)
 	}
 
-	doc := BuildDoc(specs, *title, *version, *description, *licenseName, *contactName, *contactURL, *server)
+	doc := BuildDoc(specs, opts.Title, opts.Version, opts.Description, opts.LicenseName, opts.ContactName, opts.ContactURL, opts.Server)
 
-	if err := WriteYAML(doc, *output); err != nil {
-		fmt.Fprintf(os.Stderr, "asyncapi-gen: write error: %v\n", err)
-		os.Exit(1)
+	if err := WriteYAML(doc, opts.Output); err != nil {
+		return fmt.Errorf("write error: %w", err)
 	}
 
-	if *schemasDir != "" {
-		if err := WriteJSONSchemas(specs, *schemasDir); err != nil {
-			fmt.Fprintf(os.Stderr, "asyncapi-gen: schema write error: %v\n", err)
-			os.Exit(1)
+	if opts.SchemasDir != "" {
+		if err := WriteJSONSchemas(specs, opts.SchemasDir); err != nil {
+			return fmt.Errorf("schema write error: %w", err)
 		}
-		fmt.Printf("asyncapi-gen: wrote JSON schemas to %s\n", *schemasDir)
+		fmt.Fprintf(stdout, "asyncapi-gen: wrote JSON schemas to %s\n", opts.SchemasDir)
 	}
 
-	fmt.Printf("asyncapi-gen: wrote %s (%d event(s))\n", *output, len(specs))
+	fmt.Fprintf(stdout, "asyncapi-gen: wrote %s (%d event(s))\n", opts.Output, len(specs))
+	return nil
 }

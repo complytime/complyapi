@@ -5,6 +5,7 @@ package main
 import (
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 )
 
@@ -111,6 +112,28 @@ type BadData struct {
 	_, err := ParseFile(path)
 	if err == nil {
 		t.Error("expected error for missing required tag keys")
+	}
+	if !strings.Contains(err.Error(), "missing required keys") {
+		t.Errorf("error = %q, want mention of missing required keys", err)
+	}
+}
+
+func TestParseFile_MalformedParam_ReturnsError(t *testing.T) {
+	content := `package testdata
+type BadData struct {
+	_ struct{} ` + "`" + `asyncapi:"channel:x,param:noeq,stream:S,type:t,send:s,receive:r"` + "`" + `
+	Name string ` + "`" + `json:"name"` + "`" + `
+}`
+	path := filepath.Join(t.TempDir(), "bad_param.go")
+	if err := os.WriteFile(path, []byte(content), 0o644); err != nil { //nolint:gosec // 0o644 is correct for test fixture files (SC-005)
+		t.Fatalf("WriteFile: %v", err)
+	}
+	_, err := ParseFile(path)
+	if err == nil {
+		t.Error("expected error for malformed param tag")
+	}
+	if !strings.Contains(err.Error(), "missing '='") {
+		t.Errorf("error = %q, want mention of missing '='", err)
 	}
 }
 

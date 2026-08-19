@@ -184,3 +184,131 @@ func TestBuildDoc_NATSBinding(t *testing.T) {
 		t.Errorf("NATS stream = %q, want %q", op.Bindings.NATS.Stream, "WIDGETS")
 	}
 }
+
+func TestGoTypeToJSONSchema(t *testing.T) {
+	tests := []struct {
+		goType string
+		want   string
+	}{
+		{"string", "string"},
+		{"*string", "string"},
+		{"int", "integer"},
+		{"int32", "integer"},
+		{"int64", "integer"},
+		{"float32", "number"},
+		{"float64", "number"},
+		{"bool", "boolean"},
+		{"SomeStruct", "object"},
+		{"*int", "integer"},
+		{"*bool", "boolean"},
+	}
+	for _, tt := range tests {
+		t.Run(tt.goType, func(t *testing.T) {
+			got := goTypeToJSONSchema(tt.goType)
+			if got != tt.want {
+				t.Errorf("goTypeToJSONSchema(%q) = %q, want %q", tt.goType, got, tt.want)
+			}
+		})
+	}
+}
+
+func TestBuildServers_ValidURL(t *testing.T) {
+	servers := buildServers("nats://myhost:4222")
+	srv, ok := servers["nats"]
+	if !ok {
+		t.Fatal("nats server not found")
+	}
+	if srv.Host != "myhost:4222" {
+		t.Errorf("Host = %q, want %q", srv.Host, "myhost:4222")
+	}
+	if srv.Protocol != "nats" {
+		t.Errorf("Protocol = %q, want %q", srv.Protocol, "nats")
+	}
+}
+
+func TestBuildServers_MalformedURL(t *testing.T) {
+	// URL without scheme — Host will be empty, falls back to raw string
+	servers := buildServers("host:4222")
+	srv, ok := servers["nats"]
+	if !ok {
+		t.Fatal("nats server not found")
+	}
+	// Fallback: raw URL used as host
+	if srv.Host != "host:4222" {
+		t.Errorf("Host = %q, want %q", srv.Host, "host:4222")
+	}
+	if srv.Protocol != "nats" {
+		t.Errorf("Protocol = %q, want %q", srv.Protocol, "nats")
+	}
+}
+
+func TestBuildServers_EmptyURL(t *testing.T) {
+	servers := buildServers("")
+	srv, ok := servers["nats"]
+	if !ok {
+		t.Fatal("nats server not found")
+	}
+	if srv.Host != "" {
+		t.Errorf("Host = %q, want empty", srv.Host)
+	}
+	if srv.Protocol != "nats" {
+		t.Errorf("Protocol = %q, want %q", srv.Protocol, "nats")
+	}
+}
+
+func TestChannelName(t *testing.T) {
+	tests := []struct {
+		in, want string
+	}{
+		{"EvidenceIngestedData", "evidenceIngested"},
+		{"WidgetCreatedData", "widgetCreated"},
+		{"Data", "Data"},
+		// edge: name becomes empty after trim, returns original
+		{"SimpleData", "simple"},
+	}
+	for _, tt := range tests {
+		t.Run(tt.in, func(t *testing.T) {
+			got := channelName(tt.in)
+			if got != tt.want {
+				t.Errorf("channelName(%q) = %q, want %q", tt.in, got, tt.want)
+			}
+		})
+	}
+}
+
+func TestHumanTitle(t *testing.T) {
+	tests := []struct {
+		in, want string
+	}{
+		{"EvidenceIngestedData", "Evidence Ingested"},
+		{"WidgetCreatedData", "Widget Created"},
+		{"SimpleData", "Simple"},
+	}
+	for _, tt := range tests {
+		t.Run(tt.in, func(t *testing.T) {
+			got := humanTitle(tt.in)
+			if got != tt.want {
+				t.Errorf("humanTitle(%q) = %q, want %q", tt.in, got, tt.want)
+			}
+		})
+	}
+}
+
+func TestUpperFirst(t *testing.T) {
+	tests := []struct {
+		in, want string
+	}{
+		{"hello", "Hello"},
+		{"Hello", "Hello"},
+		{"", ""},
+		{"a", "A"},
+	}
+	for _, tt := range tests {
+		t.Run(tt.in, func(t *testing.T) {
+			got := upperFirst(tt.in)
+			if got != tt.want {
+				t.Errorf("upperFirst(%q) = %q, want %q", tt.in, got, tt.want)
+			}
+		})
+	}
+}

@@ -209,30 +209,20 @@ func parseAsyncAPITag(structName, tag string) (EventSpec, error) {
 		}
 	}
 
-	required := []string{"channel", "stream", "type", "send", "receive"}
+	requiredFields := []struct {
+		key   string
+		value string
+	}{
+		{"channel", es.Channel},
+		{"stream", es.Stream},
+		{"type", es.CEType},
+		{"send", es.SendSummary},
+		{"receive", es.RecvSummary},
+	}
 	var missing []string
-	for _, r := range required {
-		switch r {
-		case "channel":
-			if es.Channel == "" {
-				missing = append(missing, r)
-			}
-		case "stream":
-			if es.Stream == "" {
-				missing = append(missing, r)
-			}
-		case "type":
-			if es.CEType == "" {
-				missing = append(missing, r)
-			}
-		case "send":
-			if es.SendSummary == "" {
-				missing = append(missing, r)
-			}
-		case "receive":
-			if es.RecvSummary == "" {
-				missing = append(missing, r)
-			}
+	for _, rf := range requiredFields {
+		if rf.value == "" {
+			missing = append(missing, rf.key)
 		}
 	}
 	if len(missing) > 0 {

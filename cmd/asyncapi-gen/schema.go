@@ -156,7 +156,7 @@ func BuildDoc(specs []EventSpec, title, version, description, licenseName, conta
 		}
 
 		// Send operation
-		sendKey := "publish" + title2(chKey)
+		sendKey := "publish" + upperFirst(chKey)
 		doc.Operations[sendKey] = Operation{
 			Action:  "send",
 			Summary: spec.SendSummary,
@@ -167,7 +167,7 @@ func BuildDoc(specs []EventSpec, title, version, description, licenseName, conta
 		}
 
 		// Receive operation
-		recvKey := "consume" + title2(chKey)
+		recvKey := "consume" + upperFirst(chKey)
 		doc.Operations[recvKey] = Operation{
 			Action:  "receive",
 			Summary: spec.RecvSummary,
@@ -294,8 +294,8 @@ func humanTitle(structName string) string {
 	return strings.Join(parts, " ")
 }
 
-// title2 uppercases the first letter of s.
-func title2(s string) string {
+// upperFirst uppercases the first letter of s.
+func upperFirst(s string) string {
 	if s == "" {
 		return s
 	}
