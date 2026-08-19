@@ -1,6 +1,7 @@
 {
   "$id": "EvidenceIngestedData.schema.json",
   "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "description": "EvidenceIngestedData is the CloudEvents data payload for\nevidence.ingested events.",
   "properties": {
     "artifactType": {
       "description": "Gemara artifact type",

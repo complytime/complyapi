@@ -48,9 +48,10 @@ type Server struct {
 
 // Channel describes a NATS subject channel.
 type Channel struct {
-	Address    string               `yaml:"address"`
-	Parameters map[string]Parameter `yaml:"parameters,omitempty"`
-	Messages   map[string]Ref       `yaml:"messages"`
+	Address     string               `yaml:"address"`
+	Description string               `yaml:"description,omitempty"`
+	Parameters  map[string]Parameter `yaml:"parameters,omitempty"`
+	Messages    map[string]Ref       `yaml:"messages"`
 }
 
 // Parameter describes a channel address parameter.
@@ -148,8 +149,9 @@ func BuildDoc(specs []EventSpec, title, version, description, licenseName, conta
 			params[k] = Parameter{Description: v}
 		}
 		doc.Channels[chKey] = Channel{
-			Address:    spec.Channel,
-			Parameters: params,
+			Address:     spec.Channel,
+			Description: spec.ChannelDescription,
+			Parameters:  params,
 			Messages: map[string]Ref{
 				msgKey: {Ref: fmt.Sprintf("#/components/messages/%s", msgKey)},
 			},
@@ -241,11 +243,15 @@ func buildDataSchema(spec EventSpec) Schema {
 		}
 	}
 
-	return Schema{
+	s := Schema{
 		Type:       "object",
 		Required:   required,
 		Properties: props,
 	}
+	if spec.DocComment != "" {
+		s.Description = spec.DocComment
+	}
+	return s
 }
 
 // goTypeToJSONSchema maps Go type strings to JSON Schema type strings.

@@ -14,14 +14,16 @@ import (
 
 // EventSpec holds the generator metadata extracted from one event data struct.
 type EventSpec struct {
-	StructName  string
-	Channel     string
-	Params      map[string]string // param name → description
-	Stream      string
-	CEType      string
-	SendSummary string
-	RecvSummary string
-	Fields      []FieldSpec
+	StructName         string
+	Channel            string
+	Params             map[string]string // param name → description
+	Stream             string
+	CEType             string
+	SendSummary        string
+	RecvSummary        string
+	ChannelDescription string // from asyncapi tag description: key
+	DocComment         string // Go doc comment on the struct
+	Fields             []FieldSpec
 }
 
 // FieldSpec describes one data field extracted from a struct.
@@ -42,7 +44,7 @@ func ParseFile(path string) ([]EventSpec, error) {
 	}
 
 	fset := token.NewFileSet()
-	f, err := parser.ParseFile(fset, path, src, 0)
+	f, err := parser.ParseFile(fset, path, src, parser.ParseComments)
 	if err != nil {
 		return nil, fmt.Errorf("parsing file: %w", err)
 	}
@@ -62,11 +64,23 @@ func ParseFile(path string) ([]EventSpec, error) {
 			if !ok {
 				continue
 			}
+
+			// Extract doc comment: prefer TypeSpec.Doc, fall back to GenDecl.Doc
+			// (single-spec type declarations attach comments to GenDecl).
+			var docComment string
+			switch {
+			case typeSpec.Doc != nil:
+				docComment = strings.TrimSpace(typeSpec.Doc.Text())
+			case genDecl.Doc != nil:
+				docComment = strings.TrimSpace(genDecl.Doc.Text())
+			}
+
 			es, ok, err := extractEventSpec(typeSpec.Name.Name, structType)
 			if err != nil {
 				return nil, err
 			}
 			if ok {
+				es.DocComment = docComment
 				specs = append(specs, es)
 			}
 		}
@@ -206,6 +220,8 @@ func parseAsyncAPITag(structName, tag string) (EventSpec, error) {
 			es.SendSummary = val
 		case "receive":
 			es.RecvSummary = val
+		case "description":
+			es.ChannelDescription = val
 		}
 	}
 

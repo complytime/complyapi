@@ -41,6 +41,12 @@ func TestParseFile_ReturnsEventSpec(t *testing.T) {
 	if s.RecvSummary != "Consume widget-created events" {
 		t.Errorf("RecvSummary = %q, want %q", s.RecvSummary, "Consume widget-created events")
 	}
+	if s.ChannelDescription != "Widget creation pipeline" {
+		t.Errorf("ChannelDescription = %q, want %q", s.ChannelDescription, "Widget creation pipeline")
+	}
+	if s.DocComment != "WidgetCreatedData is the payload for widget.created events." {
+		t.Errorf("DocComment = %q, want %q", s.DocComment, "WidgetCreatedData is the payload for widget.created events.")
+	}
 }
 
 func TestParseFile_ReturnsFields(t *testing.T) {

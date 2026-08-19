@@ -8,13 +8,15 @@ import (
 
 func singleSpec() EventSpec {
 	return EventSpec{
-		StructName:  "WidgetCreatedData",
-		Channel:     "core.widget.created.{ownerId}",
-		Params:      map[string]string{"ownerId": "The widget owner identifier"},
-		Stream:      "WIDGETS",
-		CEType:      "dev.example.widget.created",
-		SendSummary: "Published when a widget is created",
-		RecvSummary: "Consume widget-created events",
+		StructName:         "WidgetCreatedData",
+		Channel:            "core.widget.created.{ownerId}",
+		Params:             map[string]string{"ownerId": "The widget owner identifier"},
+		Stream:             "WIDGETS",
+		CEType:             "dev.example.widget.created",
+		SendSummary:        "Published when a widget is created",
+		RecvSummary:        "Consume widget-created events",
+		ChannelDescription: "Widget creation pipeline",
+		DocComment:         "WidgetCreatedData is the payload for widget.created events.",
 		Fields: []FieldSpec{
 			{JSONName: "widgetId", GoType: "string", Required: true, Description: "Unique widget identifier"},
 			{JSONName: "name", GoType: "string", Required: true},
@@ -72,6 +74,52 @@ func TestBuildDoc_Channel(t *testing.T) {
 	}
 	if param.Description != "The widget owner identifier" {
 		t.Errorf("param description = %q, want %q", param.Description, "The widget owner identifier")
+	}
+}
+
+func TestBuildDoc_ChannelDescription(t *testing.T) {
+	doc := BuildDoc([]EventSpec{singleSpec()}, "Test API", "1.0.0", "", "", "", "", "nats://localhost:4222")
+
+	ch, ok := doc.Channels["widgetCreated"]
+	if !ok {
+		t.Fatal("channel widgetCreated not found")
+	}
+	if ch.Description != "Widget creation pipeline" {
+		t.Errorf("channel description = %q, want %q", ch.Description, "Widget creation pipeline")
+	}
+}
+
+func TestBuildDoc_ChannelDescription_Empty(t *testing.T) {
+	spec := singleSpec()
+	spec.ChannelDescription = ""
+	doc := BuildDoc([]EventSpec{spec}, "Test API", "1.0.0", "", "", "", "", "nats://localhost:4222")
+
+	ch := doc.Channels["widgetCreated"]
+	if ch.Description != "" {
+		t.Errorf("channel description = %q, want empty", ch.Description)
+	}
+}
+
+func TestBuildDoc_DataSchemaDescription(t *testing.T) {
+	doc := BuildDoc([]EventSpec{singleSpec()}, "Test API", "1.0.0", "", "", "", "", "nats://localhost:4222")
+
+	dataSchema, ok := doc.Components.Schemas["WidgetCreatedData"]
+	if !ok {
+		t.Fatal("schema WidgetCreatedData not found")
+	}
+	if dataSchema.Description != "WidgetCreatedData is the payload for widget.created events." {
+		t.Errorf("data schema description = %q, want %q", dataSchema.Description, "WidgetCreatedData is the payload for widget.created events.")
+	}
+}
+
+func TestBuildDoc_DataSchemaDescription_Empty(t *testing.T) {
+	spec := singleSpec()
+	spec.DocComment = ""
+	doc := BuildDoc([]EventSpec{spec}, "Test API", "1.0.0", "", "", "", "", "nats://localhost:4222")
+
+	dataSchema := doc.Components.Schemas["WidgetCreatedData"]
+	if dataSchema.Description != "" {
+		t.Errorf("data schema description = %q, want empty", dataSchema.Description)
 	}
 }
 

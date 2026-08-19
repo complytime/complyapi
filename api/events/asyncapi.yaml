@@ -22,6 +22,7 @@ servers:
 channels:
     evidenceIngested:
         address: core.evidence.ingested.{subjectId}
+        description: Evidence ingestion pipeline for compliance artifacts
         parameters:
             subjectId:
                 description: The compliance subject identifier
@@ -90,6 +91,9 @@ components:
                     const: dev.complytime.evidence.ingested
         EvidenceIngestedData:
             type: object
+            description: |-
+                EvidenceIngestedData is the CloudEvents data payload for
+                evidence.ingested events.
             required:
                 - contentDigest
                 - artifactType

@@ -21,7 +21,7 @@ const TypeEvidenceIngested = "dev.complytime.evidence.ingested"
 // evidence.ingested events.
 type EvidenceIngestedData struct {
 	//nolint:unused
-	_ struct{} `asyncapi:"channel:core.evidence.ingested.{subjectId},param:subjectId=The compliance subject identifier,stream:EVIDENCE,type:dev.complytime.evidence.ingested,send:Published when evidence is accepted for processing,receive:Consume evidence-ingested events"`
+	_ struct{} `asyncapi:"channel:core.evidence.ingested.{subjectId},param:subjectId=The compliance subject identifier,stream:EVIDENCE,type:dev.complytime.evidence.ingested,send:Published when evidence is accepted for processing,receive:Consume evidence-ingested events,description:Evidence ingestion pipeline for compliance artifacts"`
 
 	ContentDigest string  `json:"contentDigest" asyncapi-field:"description:SHA-256 digest of the evidence artifact"`
 	ArtifactType  string  `json:"artifactType" asyncapi-field:"description:Gemara artifact type"`

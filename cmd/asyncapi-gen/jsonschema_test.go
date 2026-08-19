@@ -55,6 +55,11 @@ func TestBuildDataJSONSchema(t *testing.T) {
 		t.Errorf("widgetId description = %q, want %q", widgetID["description"], "Unique widget identifier")
 	}
 
+	// Data schema should have description from doc comment
+	if schema["description"] != "WidgetCreatedData is the payload for widget.created events." {
+		t.Errorf("data schema description = %q, want %q", schema["description"], "WidgetCreatedData is the payload for widget.created events.")
+	}
+
 	// Field without description should have no description key
 	nameProp, ok := props["name"].(JSONSchema)
 	if !ok {

@@ -36,6 +36,9 @@ func BuildDataJSONSchema(spec EventSpec) JSONSchema {
 		"type":       "object",
 		"properties": properties,
 	}
+	if spec.DocComment != "" {
+		schema["description"] = spec.DocComment
+	}
 	if len(required) > 0 {
 		schema["required"] = required
 	}
