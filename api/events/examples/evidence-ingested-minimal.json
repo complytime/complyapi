@@ -1,0 +1,14 @@
+{
+  "specversion": "1.0",
+  "id": "f47ac10b-58cc-4372-a567-0e02b2c3d479",
+  "type": "dev.complytime.evidence.ingested",
+  "source": "complytime-gateway",
+  "subject": "my-app-v1",
+  "time": "2026-08-20T14:30:00Z",
+  "datacontenttype": "application/json",
+  "data": {
+    "contentDigest": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "artifactType": "application/vnd.gemara.evaluation-log+json",
+    "subjectId": "my-app-v1"
+  }
+}

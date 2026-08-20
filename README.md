@@ -48,6 +48,22 @@ func main() {
 |------|----------|-------------|
 | `dev.complytime.evidence.ingested` | `events.TypeEvidenceIngested` | Evidence accepted for processing |
 
+### Payload Examples
+
+Example CloudEvents JSON payloads are in
+[`api/events/examples/`](api/events/examples/):
+
+| File | Description |
+|------|-------------|
+| [`evidence-ingested.json`](api/events/examples/evidence-ingested.json) | Full payload with all fields |
+| [`evidence-ingested-minimal.json`](api/events/examples/evidence-ingested-minimal.json) | Required fields only |
+| [`evidence-ingested-with-shard.json`](api/events/examples/evidence-ingested-with-shard.json) | With optional `shardId` |
+
+These examples conform to the [JSON Schema](api/events/schemas/) and
+[AsyncAPI spec](api/events/asyncapi.yaml). They are hand-maintained
+reference payloads; the generated schemas remain the source of truth
+for validation.
+
 ## Development
 
 ### Prerequisites
