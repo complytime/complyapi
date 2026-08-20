@@ -3,6 +3,7 @@
 package main
 
 import (
+	"bufio"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -10,22 +11,142 @@ import (
 	"testing"
 )
 
+// parseGenerateDirective reads the go:generate directive from events.go
+// and returns the flag arguments (everything after "go run ../cmd/asyncapi-gen").
+// This ensures the integration test always uses the same metadata as the
+// real go:generate invocation — no hardcoded duplication.
+func parseGenerateDirective(t *testing.T, eventsPath string) []string {
+	t.Helper()
+	f, err := os.Open(eventsPath)
+	if err != nil {
+		t.Fatalf("opening %s: %v", eventsPath, err)
+	}
+	defer f.Close()
+
+	scanner := bufio.NewScanner(f)
+	// Increase buffer for long go:generate lines.
+	scanner.Buffer(make([]byte, 0, 64*1024), 64*1024)
+	const prefix = "//go:generate go run ../cmd/asyncapi-gen "
+	for scanner.Scan() {
+		line := scanner.Text()
+		if strings.HasPrefix(line, prefix) {
+			argStr := line[len(prefix):]
+			return splitArgs(argStr)
+		}
+	}
+	if err := scanner.Err(); err != nil {
+		t.Fatalf("scanning %s: %v", eventsPath, err)
+	}
+	t.Fatalf("no //go:generate directive found in %s", eventsPath)
+	return nil
+}
+
+// splitArgs splits a flag string respecting quoted values (for -description etc).
+// Inside quoted segments, \n is interpreted as a real newline to match go generate
+// behaviour (go generate processes escape sequences in quoted arguments).
+func splitArgs(s string) []string {
+	var args []string
+	var current strings.Builder
+	inQuote := false
+	for i := 0; i < len(s); i++ {
+		ch := s[i]
+		if ch == '"' {
+			inQuote = !inQuote
+			continue
+		}
+		if ch == ' ' && !inQuote {
+			if current.Len() > 0 {
+				args = append(args, current.String())
+				current.Reset()
+			}
+			continue
+		}
+		// Handle escape sequences inside quoted strings.
+		if inQuote && ch == '\\' && i+1 < len(s) {
+			next := s[i+1]
+			switch next {
+			case 'n':
+				current.WriteByte('\n')
+				i++
+				continue
+			case 't':
+				current.WriteByte('\t')
+				i++
+				continue
+			case '\\':
+				current.WriteByte('\\')
+				i++
+				continue
+			case '"':
+				current.WriteByte('"')
+				i++
+				continue
+			}
+		}
+		current.WriteByte(ch)
+	}
+	if current.Len() > 0 {
+		args = append(args, current.String())
+	}
+	return args
+}
+
+func TestSplitArgs(t *testing.T) {
+	tests := []struct {
+		name string
+		in   string
+		want []string
+	}{
+		{"simple", "-a foo -b bar", []string{"-a", "foo", "-b", "bar"}},
+		{"quoted with spaces", `-title "My API Title"`, []string{"-title", "My API Title"}},
+		{"newline escape", `-desc "line1\nline2"`, []string{"-desc", "line1\nline2"}},
+		{"tab escape", `-desc "col1\tcol2"`, []string{"-desc", "col1\tcol2"}},
+		{"backslash escape", `-path "c:\\dir"`, []string{"-path", "c:\\dir"}},
+		{"escaped quote", `-msg "say \"hi\""`, []string{"-msg", `say "hi"`}},
+		{"empty input", "", nil},
+		{"trailing spaces", "-a foo  ", []string{"-a", "foo"}},
+		{"adjacent values", `-a "x" -b "y"`, []string{"-a", "x", "-b", "y"}},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got := splitArgs(tt.in)
+			if len(got) != len(tt.want) {
+				t.Fatalf("splitArgs(%q) = %v (len %d), want %v (len %d)", tt.in, got, len(got), tt.want, len(tt.want))
+			}
+			for i := range got {
+				if got[i] != tt.want[i] {
+					t.Errorf("splitArgs(%q)[%d] = %q, want %q", tt.in, i, got[i], tt.want[i])
+				}
+			}
+		})
+	}
+}
+
 // TestIntegration_GeneratedMatchesCommitted regenerates asyncapi.yaml from
 // events/events.go and verifies the output matches the committed file.
 // This is the drift detector: it fails if the two are out of sync.
 func TestIntegration_GeneratedMatchesCommitted(t *testing.T) {
-	// Path to the real events source, relative to this test file location.
 	inputPath := filepath.Join("..", "..", "events", "events.go")
 	committedPath := filepath.Join("..", "..", "api", "events", "asyncapi.yaml")
+
+	// Parse flags from the go:generate directive — single source of truth.
+	args := parseGenerateDirective(t, inputPath)
+	opts := parseFlags(args)
 
 	specs, err := ParseFile(inputPath)
 	if err != nil {
 		t.Fatalf("ParseFile: %v", err)
 	}
 
-	doc := BuildDoc(specs, "ComplyTime API Events", "0.1.0",
-		"Event contract for the ComplyTime evidence lifecycle.\n\nAll public events use CloudEvents v1.0 envelope (JSON format).\nThis spec is generated from Go types in the events package via cmd/asyncapi-gen.\nDo not edit manually — run 'go generate ./events/...' to regenerate.",
-		"Apache-2.0", "ComplyTime", "https://github.com/complytime/complyapi", "nats://localhost:4222")
+	doc := BuildDoc(specs, DocMeta{
+		Title:       opts.Title,
+		Version:     opts.Version,
+		Description: opts.Description,
+		LicenseName: opts.LicenseName,
+		ContactName: opts.ContactName,
+		ContactURL:  opts.ContactURL,
+		ServerURL:   opts.Server,
+	})
 
 	outPath := filepath.Join(t.TempDir(), "asyncapi.yaml")
 	if err := WriteYAML(doc, outPath); err != nil {

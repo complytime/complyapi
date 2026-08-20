@@ -50,6 +50,13 @@ func main() {
 
 ## Development
 
+### Prerequisites
+
+- [Go](https://go.dev/) (version per `go.mod`)
+- [Task](https://taskfile.dev/) (task runner)
+- [golangci-lint](https://golangci-lint.run/)
+- [Node.js](https://nodejs.org/) with `npx` (required by `task asyncapi-lint`; first run downloads the AsyncAPI CLI from npm)
+
 After modifying Go structs in `events/events.go`, regenerate derived artifacts:
 
 ```bash
@@ -74,8 +81,26 @@ task check
 ### Adding a new event type
 
 1. Define a new `*Data` struct in `events/events.go` with a sentinel blank
-   field carrying the `asyncapi` tag (channel, params, stream, type, send,
-   receive metadata).
+   field carrying the `asyncapi` tag. The tag is a comma-separated list of
+   `key:value` pairs. **Values must not contain commas** (the parser splits
+   on commas, and a comma inside a value silently truncates it). Use
+   semicolons for natural pauses. Recognised keys:
+
+   | Key | Required | Format | Description |
+   |-----|----------|--------|-------------|
+   | `channel` | yes | NATS subject with `{param}` placeholders | Channel address |
+   | `param` | no | `name=description` (repeatable) | Channel parameter |
+   | `stream` | yes | Upper-case stream name | NATS JetStream stream |
+   | `type` | yes | Reverse-DNS CloudEvents type | CloudEvents `type` attribute |
+   | `send` | yes | Free text (no commas) | Send operation summary |
+   | `receive` | yes | Free text (no commas) | Receive operation summary |
+   | `description` | no | Free text (no commas) | Channel description |
+
+   Example sentinel field:
+   ```go
+   _ struct{} `asyncapi:"channel:core.widget.created.{ownerId},param:ownerId=The widget owner,stream:WIDGETS,type:dev.complytime.widget.created,send:Published when a widget is created,receive:Consume widget-created events,description:Widget creation pipeline"`
+   ```
+
 2. Add `asyncapi-field:"description:..."` tags on each struct field for
    schema descriptions.
 3. Run `task generate` to regenerate all derived artifacts.

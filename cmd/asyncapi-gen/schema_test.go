@@ -6,6 +6,10 @@ import (
 	"testing"
 )
 
+func testMeta() DocMeta {
+	return DocMeta{Title: "Test API", Version: "1.0.0", ServerURL: "nats://localhost:4222"}
+}
+
 func singleSpec() EventSpec {
 	return EventSpec{
 		StructName:         "WidgetCreatedData",
@@ -27,7 +31,7 @@ func singleSpec() EventSpec {
 }
 
 func TestBuildDoc_InfoFields(t *testing.T) {
-	doc := BuildDoc([]EventSpec{singleSpec()}, "Test API", "1.0.0", "", "", "", "", "nats://localhost:4222")
+	doc := BuildDoc([]EventSpec{singleSpec()}, testMeta())
 
 	if doc.AsyncAPI != "3.0.0" {
 		t.Errorf("AsyncAPI = %q, want %q", doc.AsyncAPI, "3.0.0")
@@ -44,7 +48,7 @@ func TestBuildDoc_InfoFields(t *testing.T) {
 }
 
 func TestBuildDoc_ServerURL(t *testing.T) {
-	doc := BuildDoc([]EventSpec{singleSpec()}, "Test API", "1.0.0", "", "", "", "", "nats://localhost:4222")
+	doc := BuildDoc([]EventSpec{singleSpec()}, testMeta())
 
 	if len(doc.Servers) != 1 {
 		t.Fatalf("len(Servers) = %d, want 1", len(doc.Servers))
@@ -59,7 +63,7 @@ func TestBuildDoc_ServerURL(t *testing.T) {
 }
 
 func TestBuildDoc_Channel(t *testing.T) {
-	doc := BuildDoc([]EventSpec{singleSpec()}, "Test API", "1.0.0", "", "", "", "", "nats://localhost:4222")
+	doc := BuildDoc([]EventSpec{singleSpec()}, testMeta())
 
 	ch, ok := doc.Channels["widgetCreated"]
 	if !ok {
@@ -78,7 +82,7 @@ func TestBuildDoc_Channel(t *testing.T) {
 }
 
 func TestBuildDoc_ChannelDescription(t *testing.T) {
-	doc := BuildDoc([]EventSpec{singleSpec()}, "Test API", "1.0.0", "", "", "", "", "nats://localhost:4222")
+	doc := BuildDoc([]EventSpec{singleSpec()}, testMeta())
 
 	ch, ok := doc.Channels["widgetCreated"]
 	if !ok {
@@ -92,7 +96,7 @@ func TestBuildDoc_ChannelDescription(t *testing.T) {
 func TestBuildDoc_ChannelDescription_Empty(t *testing.T) {
 	spec := singleSpec()
 	spec.ChannelDescription = ""
-	doc := BuildDoc([]EventSpec{spec}, "Test API", "1.0.0", "", "", "", "", "nats://localhost:4222")
+	doc := BuildDoc([]EventSpec{spec}, testMeta())
 
 	ch := doc.Channels["widgetCreated"]
 	if ch.Description != "" {
@@ -101,7 +105,7 @@ func TestBuildDoc_ChannelDescription_Empty(t *testing.T) {
 }
 
 func TestBuildDoc_DataSchemaDescription(t *testing.T) {
-	doc := BuildDoc([]EventSpec{singleSpec()}, "Test API", "1.0.0", "", "", "", "", "nats://localhost:4222")
+	doc := BuildDoc([]EventSpec{singleSpec()}, testMeta())
 
 	dataSchema, ok := doc.Components.Schemas["WidgetCreatedData"]
 	if !ok {
@@ -115,7 +119,7 @@ func TestBuildDoc_DataSchemaDescription(t *testing.T) {
 func TestBuildDoc_DataSchemaDescription_Empty(t *testing.T) {
 	spec := singleSpec()
 	spec.DocComment = ""
-	doc := BuildDoc([]EventSpec{spec}, "Test API", "1.0.0", "", "", "", "", "nats://localhost:4222")
+	doc := BuildDoc([]EventSpec{spec}, testMeta())
 
 	dataSchema := doc.Components.Schemas["WidgetCreatedData"]
 	if dataSchema.Description != "" {
@@ -124,7 +128,7 @@ func TestBuildDoc_DataSchemaDescription_Empty(t *testing.T) {
 }
 
 func TestBuildDoc_Operations(t *testing.T) {
-	doc := BuildDoc([]EventSpec{singleSpec()}, "Test API", "1.0.0", "", "", "", "", "nats://localhost:4222")
+	doc := BuildDoc([]EventSpec{singleSpec()}, testMeta())
 
 	sendOp, ok := doc.Operations["publishWidgetCreated"]
 	if !ok {
@@ -150,7 +154,7 @@ func TestBuildDoc_Operations(t *testing.T) {
 }
 
 func TestBuildDoc_DataSchemaFields(t *testing.T) {
-	doc := BuildDoc([]EventSpec{singleSpec()}, "Test API", "1.0.0", "", "", "", "", "nats://localhost:4222")
+	doc := BuildDoc([]EventSpec{singleSpec()}, testMeta())
 
 	dataSchema, ok := doc.Components.Schemas["WidgetCreatedData"]
 	if !ok {
@@ -197,7 +201,7 @@ func TestBuildDoc_DataSchemaFields(t *testing.T) {
 }
 
 func TestBuildDoc_CloudEventsEnvelope(t *testing.T) {
-	doc := BuildDoc([]EventSpec{singleSpec()}, "Test API", "1.0.0", "", "", "", "", "nats://localhost:4222")
+	doc := BuildDoc([]EventSpec{singleSpec()}, testMeta())
 
 	env, ok := doc.Components.Schemas["WidgetCreatedCloudEvent"]
 	if !ok {
@@ -222,7 +226,7 @@ func TestBuildDoc_CloudEventsEnvelope(t *testing.T) {
 }
 
 func TestBuildDoc_NATSBinding(t *testing.T) {
-	doc := BuildDoc([]EventSpec{singleSpec()}, "Test API", "1.0.0", "", "", "", "", "nats://localhost:4222")
+	doc := BuildDoc([]EventSpec{singleSpec()}, testMeta())
 
 	op, ok := doc.Operations["publishWidgetCreated"]
 	if !ok {
@@ -249,6 +253,9 @@ func TestGoTypeToJSONSchema(t *testing.T) {
 		{"SomeStruct", "object"},
 		{"*int", "integer"},
 		{"*bool", "boolean"},
+		{"[]string", "array"},
+		{"[]*int", "array"},
+		{"interface{}", "object"},
 	}
 	for _, tt := range tests {
 		t.Run(tt.goType, func(t *testing.T) {
@@ -310,8 +317,8 @@ func TestChannelName(t *testing.T) {
 	}{
 		{"EvidenceIngestedData", "evidenceIngested"},
 		{"WidgetCreatedData", "widgetCreated"},
-		{"Data", "Data"},
 		// edge: name becomes empty after trim, returns original
+		{"Data", "Data"},
 		{"SimpleData", "simple"},
 	}
 	for _, tt := range tests {
@@ -331,6 +338,8 @@ func TestHumanTitle(t *testing.T) {
 		{"EvidenceIngestedData", "Evidence Ingested"},
 		{"WidgetCreatedData", "Widget Created"},
 		{"SimpleData", "Simple"},
+		// edge: name becomes empty after trim, returns original
+		{"Data", "Data"},
 	}
 	for _, tt := range tests {
 		t.Run(tt.in, func(t *testing.T) {

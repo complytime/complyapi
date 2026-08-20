@@ -5,6 +5,7 @@ package main
 import (
 	"bytes"
 	"os"
+	"path/filepath"
 	"strings"
 	"testing"
 )
@@ -54,18 +55,17 @@ func TestRun_ParseError(t *testing.T) {
 }
 
 func TestRun_NoAnnotatedStructs(t *testing.T) {
-	// Write a valid Go file with no asyncapi annotations
 	dir := t.TempDir()
-	input := dir + "/empty.go"
+	input := filepath.Join(dir, "empty.go")
 	content := "package testdata\n\ntype Plain struct {\n\tName string `json:\"name\"`\n}\n"
-	if err := writeTestFile(input, content); err != nil {
+	if err := os.WriteFile(input, []byte(content), 0o644); err != nil { //nolint:gosec // 0o644 is correct for test fixture files (SC-005)
 		t.Fatalf("writing test file: %v", err)
 	}
 
 	var stdout, stderr bytes.Buffer
 	opts := Options{
 		Input:   input,
-		Output:  dir + "/out.yaml",
+		Output:  filepath.Join(dir, "out.yaml"),
 		Title:   "Test",
 		Version: "1.0",
 		Server:  "nats://localhost:4222",
@@ -84,7 +84,7 @@ func TestRun_HappyPath(t *testing.T) {
 	var stdout, stderr bytes.Buffer
 	opts := Options{
 		Input:   "testdata/fixture.go",
-		Output:  dir + "/asyncapi.yaml",
+		Output:  filepath.Join(dir, "asyncapi.yaml"),
 		Title:   "Test API",
 		Version: "1.0.0",
 		Server:  "nats://localhost:4222",
@@ -103,11 +103,11 @@ func TestRun_HappyPathWithSchemas(t *testing.T) {
 	var stdout, stderr bytes.Buffer
 	opts := Options{
 		Input:      "testdata/fixture.go",
-		Output:     dir + "/asyncapi.yaml",
+		Output:     filepath.Join(dir, "asyncapi.yaml"),
 		Title:      "Test API",
 		Version:    "1.0.0",
 		Server:     "nats://localhost:4222",
-		SchemasDir: dir + "/schemas",
+		SchemasDir: filepath.Join(dir, "schemas"),
 	}
 	err := run(opts, &stdout, &stderr)
 	if err != nil {
@@ -140,10 +140,70 @@ func TestRun_WriteError(t *testing.T) {
 	}
 }
 
-func writeTestFile(path, content string) error {
-	return writeFileForTest(path, []byte(content))
+func TestRun_SchemaWriteError(t *testing.T) {
+	dir := t.TempDir()
+	var stdout, stderr bytes.Buffer
+	opts := Options{
+		Input:      "testdata/fixture.go",
+		Output:     filepath.Join(dir, "asyncapi.yaml"),
+		Title:      "Test API",
+		Version:    "1.0.0",
+		Server:     "nats://localhost:4222",
+		SchemasDir: "/nonexistent/deeply/nested/dir/schemas",
+	}
+	err := run(opts, &stdout, &stderr)
+	if err == nil {
+		t.Fatal("expected error for invalid schemas directory")
+	}
+	if !strings.Contains(err.Error(), "schema write error") {
+		t.Errorf("error = %q, want mention of schema write error", err)
+	}
 }
 
-func writeFileForTest(path string, data []byte) error {
-	return os.WriteFile(path, data, 0o644) //nolint:gosec // 0o644 is correct for test fixture files (SC-005)
+func TestParseFlags_AllFlags(t *testing.T) {
+	args := []string{
+		"-input", "events.go",
+		"-output", "out.yaml",
+		"-title", "My API",
+		"-version", "2.0.0",
+		"-server", "nats://host:4222",
+		"-description", "A description",
+		"-license", "MIT",
+		"-contact-name", "Alice",
+		"-contact-url", "https://example.com",
+		"-schemas-dir", "/tmp/schemas",
+	}
+	opts := parseFlags(args)
+
+	checks := []struct {
+		name string
+		got  string
+		want string
+	}{
+		{"Input", opts.Input, "events.go"},
+		{"Output", opts.Output, "out.yaml"},
+		{"Title", opts.Title, "My API"},
+		{"Version", opts.Version, "2.0.0"},
+		{"Server", opts.Server, "nats://host:4222"},
+		{"Description", opts.Description, "A description"},
+		{"LicenseName", opts.LicenseName, "MIT"},
+		{"ContactName", opts.ContactName, "Alice"},
+		{"ContactURL", opts.ContactURL, "https://example.com"},
+		{"SchemasDir", opts.SchemasDir, "/tmp/schemas"},
+	}
+	for _, c := range checks {
+		if c.got != c.want {
+			t.Errorf("%s = %q, want %q", c.name, c.got, c.want)
+		}
+	}
+}
+
+func TestParseFlags_Defaults(t *testing.T) {
+	opts := parseFlags([]string{})
+	if opts.Input != "" {
+		t.Errorf("Input default = %q, want empty", opts.Input)
+	}
+	if opts.SchemasDir != "" {
+		t.Errorf("SchemasDir default = %q, want empty", opts.SchemasDir)
+	}
 }

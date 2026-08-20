@@ -5,7 +5,7 @@ tasks:
   test:
     desc: Run all tests
     cmds:
-      - go test ./...
+      - go test -race -count=1 ./...
 
   lint:
     desc: Run golangci-lint
@@ -18,7 +18,7 @@ tasks:
       - go vet ./...
 
   generate:
-    desc: Regenerate derived artifacts (asyncapi.yaml)
+    desc: Regenerate derived artifacts (asyncapi.yaml and JSON Schemas)
     cmds:
       - go generate ./events/...
 

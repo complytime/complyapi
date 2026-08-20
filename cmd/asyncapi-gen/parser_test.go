@@ -124,6 +124,25 @@ type BadData struct {
 	}
 }
 
+func TestParseFile_ColonlessSegment_ReturnsError(t *testing.T) {
+	content := `package testdata
+type BadData struct {
+	_ struct{} ` + "`" + `asyncapi:"channel:x,ORPHAN,stream:S,type:t,send:s,receive:r"` + "`" + `
+	Name string ` + "`" + `json:"name"` + "`" + `
+}`
+	path := filepath.Join(t.TempDir(), "bad_colon.go")
+	if err := os.WriteFile(path, []byte(content), 0o644); err != nil { //nolint:gosec // 0o644 is correct for test fixture files (SC-005)
+		t.Fatalf("WriteFile: %v", err)
+	}
+	_, err := ParseFile(path)
+	if err == nil {
+		t.Error("expected error for colonless asyncapi tag segment")
+	}
+	if !strings.Contains(err.Error(), "missing ':'") {
+		t.Errorf("error = %q, want mention of missing ':'", err)
+	}
+}
+
 func TestParseFile_MalformedParam_ReturnsError(t *testing.T) {
 	content := `package testdata
 type BadData struct {

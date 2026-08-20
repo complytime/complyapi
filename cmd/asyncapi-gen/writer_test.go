@@ -10,7 +10,7 @@ import (
 )
 
 func TestWriteYAML_CreatesFile(t *testing.T) {
-	doc := BuildDoc([]EventSpec{singleSpec()}, "Test API", "1.0.0", "", "", "", "", "nats://localhost:4222")
+	doc := BuildDoc([]EventSpec{singleSpec()}, testMeta())
 	out := filepath.Join(t.TempDir(), "asyncapi.yaml")
 
 	if err := WriteYAML(doc, out); err != nil {
@@ -41,7 +41,7 @@ func TestWriteYAML_CreatesFile(t *testing.T) {
 }
 
 func TestWriteYAML_SpdxHeader(t *testing.T) {
-	doc := BuildDoc([]EventSpec{singleSpec()}, "Test API", "1.0.0", "", "", "", "", "nats://localhost:4222")
+	doc := BuildDoc([]EventSpec{singleSpec()}, testMeta())
 	out := filepath.Join(t.TempDir(), "asyncapi.yaml")
 
 	if err := WriteYAML(doc, out); err != nil {

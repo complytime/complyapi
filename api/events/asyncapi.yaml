@@ -37,7 +37,7 @@ operations:
             $ref: '#/channels/evidenceIngested'
     publishEvidenceIngested:
         action: send
-        summary: Published when evidence is accepted for processing
+        summary: Published when evidence is accepted for processing; before sealing
         channel:
             $ref: '#/channels/evidenceIngested'
         bindings:

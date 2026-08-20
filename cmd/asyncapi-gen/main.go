@@ -65,7 +65,15 @@ func run(opts Options, stdout, stderr io.Writer) error {
 		return fmt.Errorf("no annotated structs found in %s", opts.Input)
 	}
 
-	doc := BuildDoc(specs, opts.Title, opts.Version, opts.Description, opts.LicenseName, opts.ContactName, opts.ContactURL, opts.Server)
+	doc := BuildDoc(specs, DocMeta{
+		Title:       opts.Title,
+		Version:     opts.Version,
+		Description: opts.Description,
+		LicenseName: opts.LicenseName,
+		ContactName: opts.ContactName,
+		ContactURL:  opts.ContactURL,
+		ServerURL:   opts.Server,
+	})
 
 	if err := WriteYAML(doc, opts.Output); err != nil {
 		return fmt.Errorf("write error: %w", err)

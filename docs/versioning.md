@@ -79,6 +79,13 @@ run `go generate ./events/...`.
 changes only if CloudEvents itself releases a new envelope format. It is never
 your schema-change signal. Do not conflate it with `type`.
 
+## Pre-1.0 stability
+
+While `info.version` is below `1.0.0`, the contract is considered unstable and
+may change in place without a version bump. No downstream consumers should pin
+to a pre-1.0 contract version for codegen stability. Once the contract reaches
+`1.0.0`, the decision rules below become mandatory.
+
 ## Decision rule
 
 Classify the change, then act:
@@ -88,7 +95,7 @@ Classify the change, then act:
 Adding an optional field, a new enum value, or a new event type.
 
 1. Bump `info.version` minor (`0.1.0` → `0.2.0`) in the `//go:generate`
-   directive.
+   directive in [`events/events.go`](../events/events.go).
 2. Leave `type`, `specversion`, and the subject unchanged.
 3. Run `go generate ./events/...` and commit the regenerated artifacts.
 
@@ -101,8 +108,13 @@ set.
 
 1. Bump the CloudEvents `type` with a version suffix
    (`dev.complytime.evidence.ingested` → `dev.complytime.evidence.ingested.v2`).
-   Update the `Type…` constant in [`events/events.go`](../events/events.go).
-2. Bump `info.version` major (`1.0.0` → `2.0.0`).
+   Update **both** the `Type…` constant and the `type:` key inside the `asyncapi`
+   sentinel tag on the corresponding `*Data` struct in
+   [`events/events.go`](../events/events.go). The generated `const` in
+   `api/events/asyncapi.yaml` and `api/events/schemas/*.schema.json` comes from
+   the tag, not the constant.
+2. Bump `info.version` major (`1.0.0` → `2.0.0`) in the `//go:generate`
+   directive.
 3. Keep the subject unchanged.
 4. Producer emits the new `type` on the same subject. Retire the old `type` only
    after consumers have migrated.

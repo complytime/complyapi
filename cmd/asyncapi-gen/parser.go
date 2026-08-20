@@ -197,9 +197,13 @@ func parseAsyncAPITag(structName, tag string) (EventSpec, error) {
 
 	pairs := strings.Split(tag, ",")
 	for _, pair := range pairs {
+		pair = strings.TrimSpace(pair)
+		if pair == "" {
+			continue
+		}
 		idx := strings.IndexByte(pair, ':')
 		if idx < 0 {
-			continue
+			return EventSpec{}, fmt.Errorf("struct %s: asyncapi tag segment %q missing ':'", structName, pair)
 		}
 		key := strings.TrimSpace(pair[:idx])
 		val := strings.TrimSpace(pair[idx+1:])

@@ -111,24 +111,35 @@ type Schema struct {
 	Ref         string            `yaml:"$ref,omitempty"`
 }
 
+// DocMeta holds document-level metadata for the generated AsyncAPI spec.
+type DocMeta struct {
+	Title       string
+	Version     string
+	Description string
+	LicenseName string
+	ContactName string
+	ContactURL  string
+	ServerURL   string
+}
+
 // BuildDoc constructs an AsyncAPIDoc from the given specs and document metadata.
-func BuildDoc(specs []EventSpec, title, version, description, licenseName, contactName, contactURL, serverURL string) AsyncAPIDoc {
-	info := Info{Title: title, Version: version}
-	if description != "" {
-		info.Description = description
+func BuildDoc(specs []EventSpec, meta DocMeta) AsyncAPIDoc {
+	info := Info{Title: meta.Title, Version: meta.Version}
+	if meta.Description != "" {
+		info.Description = meta.Description
 	}
-	if licenseName != "" {
-		info.License = &License{Name: licenseName}
+	if meta.LicenseName != "" {
+		info.License = &License{Name: meta.LicenseName}
 	}
-	if contactName != "" || contactURL != "" {
-		info.Contact = &Contact{Name: contactName, URL: contactURL}
+	if meta.ContactName != "" || meta.ContactURL != "" {
+		info.Contact = &Contact{Name: meta.ContactName, URL: meta.ContactURL}
 	}
 
 	doc := AsyncAPIDoc{
 		AsyncAPI:           "3.0.0",
 		Info:               info,
 		DefaultContentType: "application/cloudevents+json",
-		Servers:            buildServers(serverURL),
+		Servers:            buildServers(meta.ServerURL),
 		Channels:           make(map[string]Channel),
 		Operations:         make(map[string]Operation),
 		Components: Components{
@@ -140,7 +151,7 @@ func BuildDoc(specs []EventSpec, title, version, description, licenseName, conta
 	for _, spec := range specs {
 		chKey := channelName(spec.StructName)
 		msgKey := messageKey(spec.StructName)
-		envSchemaKey := strings.TrimSuffix(spec.StructName, "Data") + "CloudEvent"
+		envSchemaKey := envelopeSchemaName(spec.StructName)
 		dataSchemaKey := spec.StructName
 
 		// Channel
@@ -255,8 +266,13 @@ func buildDataSchema(spec EventSpec) Schema {
 }
 
 // goTypeToJSONSchema maps Go type strings to JSON Schema type strings.
+// Slice types are mapped to "array" and nested struct types to "object".
+// Qualified types (e.g. time.Time) and interface{} map to "object".
 func goTypeToJSONSchema(goType string) string {
 	base := strings.TrimPrefix(goType, "*")
+	if strings.HasPrefix(base, "[]") {
+		return "array"
+	}
 	switch base {
 	case "string":
 		return "string"
@@ -288,6 +304,9 @@ func messageKey(structName string) string {
 // humanTitle converts a struct name like "EvidenceIngestedData" to "Evidence Ingested".
 func humanTitle(structName string) string {
 	name := strings.TrimSuffix(structName, "Data")
+	if len(name) == 0 {
+		return structName
+	}
 	var parts []string
 	start := 0
 	for i := 1; i < len(name); i++ {
