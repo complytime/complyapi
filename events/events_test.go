@@ -4,6 +4,8 @@ package events
 
 import (
 	"encoding/json"
+	"os"
+	"path/filepath"
 	"testing"
 
 	cloudevents "github.com/cloudevents/sdk-go/v2"
@@ -222,5 +224,76 @@ func TestNewEvidenceIngestedEventWireFormatRoundTrip(t *testing.T) {
 	}
 	if got.SubjectID != data.SubjectID {
 		t.Errorf("SubjectID = %q, want %q", got.SubjectID, data.SubjectID)
+	}
+}
+
+func TestExamplePayloads_ConformToSchema(t *testing.T) {
+	examplesDir := filepath.Join("..", "api", "events", "examples")
+	files, err := filepath.Glob(filepath.Join(examplesDir, "*.json"))
+	if err != nil {
+		t.Fatalf("glob examples: %v", err)
+	}
+	if len(files) == 0 {
+		t.Fatal("no example files found in api/events/examples/")
+	}
+
+	for _, path := range files {
+		t.Run(filepath.Base(path), func(t *testing.T) {
+			b, err := os.ReadFile(path)
+			if err != nil {
+				t.Fatalf("read %s: %v", path, err)
+			}
+
+			// Validate the full CloudEvents envelope deserializes.
+			var envelope struct {
+				SpecVersion     string               `json:"specversion"`
+				ID              string               `json:"id"`
+				Type            string               `json:"type"`
+				Source          string               `json:"source"`
+				Subject         string               `json:"subject"`
+				Time            string               `json:"time"`
+				DataContentType string               `json:"datacontenttype"`
+				Data            EvidenceIngestedData `json:"data"`
+			}
+			if err := json.Unmarshal(b, &envelope); err != nil {
+				t.Fatalf("unmarshal: %v", err)
+			}
+
+			// CloudEvents envelope const values.
+			if envelope.SpecVersion != "1.0" {
+				t.Errorf("specversion = %q, want %q", envelope.SpecVersion, "1.0")
+			}
+			if envelope.Type != TypeEvidenceIngested {
+				t.Errorf("type = %q, want %q", envelope.Type, TypeEvidenceIngested)
+			}
+			if envelope.DataContentType != "application/json" {
+				t.Errorf("datacontenttype = %q, want %q", envelope.DataContentType, "application/json")
+			}
+
+			// Required envelope fields must be non-empty.
+			if envelope.ID == "" {
+				t.Error("id must not be empty")
+			}
+			if envelope.Source == "" {
+				t.Error("source must not be empty")
+			}
+			if envelope.Subject == "" {
+				t.Error("subject must not be empty")
+			}
+			if envelope.Time == "" {
+				t.Error("time must not be empty")
+			}
+
+			// Required data fields must be non-empty.
+			if envelope.Data.ContentDigest == "" {
+				t.Error("data.contentDigest must not be empty")
+			}
+			if envelope.Data.ArtifactType == "" {
+				t.Error("data.artifactType must not be empty")
+			}
+			if envelope.Data.SubjectID == "" {
+				t.Error("data.subjectId must not be empty")
+			}
+		})
 	}
 }

@@ -1,0 +1,15 @@
+{
+  "specversion": "1.0",
+  "id": "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
+  "type": "dev.complytime.evidence.ingested",
+  "source": "complytime-gateway",
+  "subject": "my-app-v1",
+  "time": "2026-08-20T14:30:00Z",
+  "datacontenttype": "application/json",
+  "data": {
+    "contentDigest": "sha256:9f86d081884c7d659a2feaa0c55ad015a3bf4f1b2b0b822cd15d6c15b0f00a08",
+    "artifactType": "application/vnd.gemara.evaluation-log+json",
+    "storageRef": "store/evidence/2026/08/20/a1b2c3d4",
+    "subjectId": "my-app-v1"
+  }
+}
