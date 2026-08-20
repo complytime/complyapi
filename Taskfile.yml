@@ -5,7 +5,7 @@ tasks:
   test:
     desc: Run all tests
     cmds:
-      - go test ./...
+      - go test -race -count=1 ./...
 
   lint:
     desc: Run golangci-lint
@@ -17,9 +17,21 @@ tasks:
     cmds:
       - go vet ./...
 
+  generate:
+    desc: Regenerate derived artifacts (asyncapi.yaml and JSON Schemas)
+    cmds:
+      - go generate ./events/...
+
+  asyncapi-lint:
+    desc: Validate asyncapi.yaml with the AsyncAPI CLI
+    cmds:
+      # Pinned to 2.16.1 — latest has broken npm dependency (@asyncapi/studio-ui@0.5.0 404)
+      - npx --yes @asyncapi/cli@2.16.1 validate api/events/asyncapi.yaml
+
   check:
-    desc: Run lint and tests
+    desc: Run lint, vet, tests, and asyncapi validation
     cmds:
       - task: lint
       - task: vet
       - task: test
+      - task: asyncapi-lint
