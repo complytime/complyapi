@@ -227,6 +227,43 @@ func TestNewEvidenceIngestedEventWireFormatRoundTrip(t *testing.T) {
 	}
 }
 
+func TestNewEvidenceIngestedEventInvalidSubjectID(t *testing.T) {
+	cases := []struct {
+		name      string
+		subjectID string
+	}{
+		{"contains dot", "my-app.v1"},
+		{"contains star wildcard", "my-app-*"},
+		{"contains gt wildcard", "my-app->"},
+		{"contains space", "my app"},
+		{"empty", ""},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			data := EvidenceIngestedData{
+				ContentDigest: "sha256:abc123",
+				ArtifactType:  "application/vnd.gemara.evaluation-log+json",
+				SubjectID:     tc.subjectID,
+			}
+			_, err := NewEvidenceIngestedEvent("complytime-gateway", "my-app-v1", data)
+			if err == nil {
+				t.Errorf("expected error for subjectId %q", tc.subjectID)
+			}
+		})
+	}
+}
+
+func TestNewEvidenceIngestedEventValidSubjectIDCharset(t *testing.T) {
+	data := EvidenceIngestedData{
+		ContentDigest: "sha256:abc123",
+		ArtifactType:  "application/vnd.gemara.evaluation-log+json",
+		SubjectID:     "my-app_v1-2",
+	}
+	if _, err := NewEvidenceIngestedEvent("complytime-gateway", "my-app-v1", data); err != nil {
+		t.Errorf("unexpected error for valid subjectId: %v", err)
+	}
+}
+
 func TestExamplePayloads_ConformToSchema(t *testing.T) {
 	examplesDir := filepath.Join("..", "api", "events", "examples")
 	files, err := filepath.Glob(filepath.Join(examplesDir, "*.json"))

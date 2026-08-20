@@ -8,12 +8,33 @@ package events
 
 import (
 	"errors"
+	"fmt"
+	"regexp"
 	"time"
 
 	cloudevents "github.com/cloudevents/sdk-go/v2"
 	"github.com/cloudevents/sdk-go/v2/event"
 	"github.com/google/uuid"
 )
+
+// subjectIDPattern restricts subjectId to characters that are safe as a
+// literal NATS subject token: alphanumerics, dash, and underscore. It
+// excludes ".", "*", and ">" — the NATS token separator and wildcards — so
+// a subjectId can never reshape or collide with a subscriber's wildcard
+// binding (e.g. "core.evidence.ingested.*").
+var subjectIDPattern = regexp.MustCompile(`^[A-Za-z0-9_-]+$`)
+
+// validateSubjectID returns an error if subjectID is empty or contains any
+// character unsafe for use as a literal NATS subject token.
+func validateSubjectID(subjectID string) error {
+	if subjectID == "" {
+		return errors.New("subjectId must not be empty")
+	}
+	if !subjectIDPattern.MatchString(subjectID) {
+		return fmt.Errorf("subjectId %q must match %s", subjectID, subjectIDPattern.String())
+	}
+	return nil
+}
 
 const TypeEvidenceIngested = "dev.complytime.evidence.ingested"
 
@@ -38,6 +59,9 @@ func NewEvidenceIngestedEvent(source, subject string, data EvidenceIngestedData)
 	}
 	if subject == "" {
 		return cloudevents.Event{}, errors.New("subject must not be empty")
+	}
+	if err := validateSubjectID(data.SubjectID); err != nil {
+		return cloudevents.Event{}, err
 	}
 
 	e := event.New(cloudevents.VersionV1)
