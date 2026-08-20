@@ -55,9 +55,9 @@ Example CloudEvents JSON payloads are in
 
 | File | Description |
 |------|-------------|
-| [`evidence-ingested.json`](api/events/examples/evidence-ingested.json) | Full payload with all fields |
-| [`evidence-ingested-minimal.json`](api/events/examples/evidence-ingested-minimal.json) | Required fields only |
-| [`evidence-ingested-with-shard.json`](api/events/examples/evidence-ingested-with-shard.json) | With optional `shardId` |
+| [`evidence-ingested.json`](api/events/examples/evidence-ingested.json) | Common payload with required fields and `storageRef` |
+| [`evidence-ingested-minimal.json`](api/events/examples/evidence-ingested-minimal.json) | Required data fields only (no optional fields) |
+| [`evidence-ingested-with-shard.json`](api/events/examples/evidence-ingested-with-shard.json) | All fields including optional `shardId` |
 
 These examples conform to the [JSON Schema](api/events/schemas/) and
 [AsyncAPI spec](api/events/asyncapi.yaml). They are hand-maintained
