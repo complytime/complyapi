@@ -66,9 +66,6 @@ func TestEvidenceIngestedDataJSONOmitsOptionalFields(t *testing.T) {
 		t.Fatalf("Unmarshal to map: %v", err)
 	}
 
-	if _, ok := raw["storageRef"]; ok {
-		t.Error("storageRef should be omitted when empty")
-	}
 	if _, ok := raw["shardId"]; ok {
 		t.Error("shardId should be omitted when nil")
 	}
@@ -102,6 +99,7 @@ func TestNewEvidenceIngestedEvent(t *testing.T) {
 	data := EvidenceIngestedData{
 		ContentDigest: "sha256:abc123",
 		ArtifactType:  "application/vnd.gemara.evaluation-log+json",
+		StorageRef:    "locker://ref/123",
 		SubjectID:     "my-app-v1",
 	}
 
@@ -160,6 +158,29 @@ func TestNewEvidenceIngestedEventEmptySource(t *testing.T) {
 	}
 }
 
+func TestNewEvidenceIngestedEventEmptyStorageRef(t *testing.T) {
+	data := EvidenceIngestedData{
+		ContentDigest: "sha256:abc123",
+		ArtifactType:  "application/vnd.gemara.evaluation-log+json",
+		SubjectID:     "my-app-v1",
+	}
+	if _, err := NewEvidenceIngestedEvent("complytime-gateway", "my-app-v1", data); err == nil {
+		t.Error("expected error for empty storageRef")
+	}
+}
+
+func TestNewEvidenceIngestedEventStorageRefMissingScheme(t *testing.T) {
+	data := EvidenceIngestedData{
+		ContentDigest: "sha256:abc123",
+		ArtifactType:  "application/vnd.gemara.evaluation-log+json",
+		StorageRef:    "store/evidence/2026/08/20/a1b2c3d4",
+		SubjectID:     "my-app-v1",
+	}
+	if _, err := NewEvidenceIngestedEvent("complytime-gateway", "my-app-v1", data); err == nil {
+		t.Error("expected error for storageRef missing URI scheme prefix")
+	}
+}
+
 func TestNewEvidenceIngestedEventEmptySubject(t *testing.T) {
 	data := EvidenceIngestedData{
 		ContentDigest: "sha256:abc123",
@@ -177,7 +198,7 @@ func TestNewEvidenceIngestedEventWireFormatRoundTrip(t *testing.T) {
 	data := EvidenceIngestedData{
 		ContentDigest: "sha256:abc123",
 		ArtifactType:  "application/vnd.gemara.evaluation-log+json",
-		StorageRef:    "ref/456",
+		StorageRef:    "locker://ref/456",
 		SubjectID:     "my-app-v1",
 	}
 
@@ -257,6 +278,7 @@ func TestNewEvidenceIngestedEventValidSubjectIDCharset(t *testing.T) {
 	data := EvidenceIngestedData{
 		ContentDigest: "sha256:abc123",
 		ArtifactType:  "application/vnd.gemara.evaluation-log+json",
+		StorageRef:    "locker://ref/123",
 		SubjectID:     "my-app_v1-2",
 	}
 	if _, err := NewEvidenceIngestedEvent("complytime-gateway", "my-app-v1", data); err != nil {
@@ -330,6 +352,9 @@ func TestExamplePayloads_ConformToSchema(t *testing.T) {
 			}
 			if envelope.Data.SubjectID == "" {
 				t.Error("data.subjectId must not be empty")
+			}
+			if envelope.Data.StorageRef == "" {
+				t.Error("data.storageRef must not be empty")
 			}
 		})
 	}

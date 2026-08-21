@@ -24,6 +24,12 @@ import (
 // binding (e.g. "core.evidence.ingested.*").
 var subjectIDPattern = regexp.MustCompile(`^[A-Za-z0-9_-]+$`)
 
+// storageRefPattern requires storageRef to carry a URI-style scheme prefix
+// (e.g. "s3://", "gcp://", "locker://") per RFC 3986 scheme syntax. The set
+// of valid backends is not fixed, so this validates general shape rather
+// than an enumerated allowlist.
+var storageRefPattern = regexp.MustCompile(`^[a-z][a-z0-9+.-]*://`)
+
 // validateSubjectID returns an error if subjectID is empty or contains any
 // character unsafe for use as a literal NATS subject token.
 func validateSubjectID(subjectID string) error {
@@ -46,7 +52,7 @@ type EvidenceIngestedData struct {
 
 	ContentDigest string  `json:"contentDigest" asyncapi-field:"description:SHA-256 digest of the evidence artifact"`
 	ArtifactType  string  `json:"artifactType" asyncapi-field:"description:Gemara artifact type"`
-	StorageRef    string  `json:"storageRef,omitempty" asyncapi-field:"description:Internal storage reference"`
+	StorageRef    string  `json:"storageRef" asyncapi-field:"description:URI-style storage reference consumers use to fetch the evidence artifact (must include a scheme prefix, e.g. s3://, gcp://, locker://)"`
 	SubjectID     string  `json:"subjectId" asyncapi-field:"description:Compliance subject identifier"`
 	ShardID       *string `json:"shardId,omitempty" asyncapi-field:"description:Subject shard identifier (null when sharding is not configured)"`
 }
@@ -62,6 +68,12 @@ func NewEvidenceIngestedEvent(source, subject string, data EvidenceIngestedData)
 	}
 	if err := validateSubjectID(data.SubjectID); err != nil {
 		return cloudevents.Event{}, err
+	}
+	if data.StorageRef == "" {
+		return cloudevents.Event{}, errors.New("storageRef must not be empty")
+	}
+	if !storageRefPattern.MatchString(data.StorageRef) {
+		return cloudevents.Event{}, fmt.Errorf("storageRef %q must have a URI scheme prefix (e.g. s3://, gcp://, locker://)", data.StorageRef)
 	}
 
 	e := event.New(cloudevents.VersionV1)

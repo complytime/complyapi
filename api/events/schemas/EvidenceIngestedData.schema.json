@@ -17,7 +17,7 @@
       "type": "string"
     },
     "storageRef": {
-      "description": "Internal storage reference",
+      "description": "URI-style storage reference consumers use to fetch the evidence artifact (must include a scheme prefix, e.g. s3://, gcp://, locker://)",
       "type": "string"
     },
     "subjectId": {
@@ -28,6 +28,7 @@
   "required": [
     "contentDigest",
     "artifactType",
+    "storageRef",
     "subjectId"
   ],
   "type": "object"

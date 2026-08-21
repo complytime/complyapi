@@ -9,7 +9,7 @@
   "data": {
     "contentDigest": "sha256:2cf24dba5fb0a30e26e83b2ac5b9e29e1b161e5c1fa7425e73043362938b9824",
     "artifactType": "application/vnd.gemara.evaluation-log+json",
-    "storageRef": "store/evidence/2026/08/20/c9a1e2b3",
+    "storageRef": "locker://store/evidence/2026/08/20/c9a1e2b3",
     "subjectId": "my-app-v1",
     "shardId": "shard-west-1"
   }

@@ -97,6 +97,7 @@ components:
             required:
                 - contentDigest
                 - artifactType
+                - storageRef
                 - subjectId
             properties:
                 artifactType:
@@ -110,7 +111,7 @@ components:
                     description: Subject shard identifier (null when sharding is not configured)
                 storageRef:
                     type: string
-                    description: Internal storage reference
+                    description: URI-style storage reference consumers use to fetch the evidence artifact (must include a scheme prefix, e.g. s3://, gcp://, locker://)
                 subjectId:
                     type: string
                     description: Compliance subject identifier
