@@ -46,7 +46,9 @@ func main() {
 
 | Type | Constant | Description |
 |------|----------|-------------|
-| `dev.complytime.evidence.ingested` | `events.TypeEvidenceIngested` | Evidence accepted for processing |
+| `dev.complytime.evidence.ingested` | `events.TypeEvidenceIngested` | Evidence accepted for processing, before validation |
+| `dev.complytime.evidence.sealed` | `events.TypeEvidenceSealed` | Evidence validated and sealed into a unit of work |
+| `dev.complytime.evidence.quarantined` | `events.TypeEvidenceQuarantined` | Evidence failed validation and was quarantined |
 
 ### Payload Examples
 
@@ -58,6 +60,8 @@ Example CloudEvents JSON payloads are in
 | [`evidence-ingested.json`](api/events/examples/evidence-ingested.json) | Common payload with required fields and `storageRef` |
 | [`evidence-ingested-minimal.json`](api/events/examples/evidence-ingested-minimal.json) | Required data fields only (no optional fields) |
 | [`evidence-ingested-with-shard.json`](api/events/examples/evidence-ingested-with-shard.json) | All fields including optional `shardId` |
+| [`evidence-sealed.json`](api/events/examples/evidence-sealed.json) | Sealed outcome after successful validation |
+| [`evidence-quarantined.json`](api/events/examples/evidence-quarantined.json) | Quarantined outcome after failed validation, with `reason` |
 
 These examples conform to the [JSON Schema](api/events/schemas/) and
 [AsyncAPI spec](api/events/asyncapi.yaml). They are hand-maintained

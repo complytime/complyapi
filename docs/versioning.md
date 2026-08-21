@@ -30,8 +30,17 @@ subscribers or signals nothing.
 
 ### NATS subject — frozen routing address
 
-The subject is where a subscriber listens (ADR-0020, `domain.action.entity`
-hierarchy). It MUST NOT carry a version segment. Version information belongs in
+The subject is where a subscriber listens (ADR-0020). In this codebase that
+hierarchy is `domain.entity.action.{param}` — e.g.
+`core.evidence.ingested.{subjectId}`, `core.evidence.sealed.{subjectId}`,
+`core.evidence.quarantined.{subjectId}`. The subject's `domain` segment
+(`core`) is a routing namespace only — it does not need to match the
+CloudEvents `type`'s reverse-DNS namespace (`dev.complytime`). The two
+namespaces serve different audiences: the subject namespace scopes NATS
+routing/permissions, the `type` namespace scopes payload-contract identity.
+Do not infer one from the other; dispatch on `type`, subscribe on subject.
+
+The subject MUST NOT carry a version segment. Version information belongs in
 the CloudEvents `type` (see below), per ADR-0021, which routes and filters on
 `type` and `source`.
 
@@ -39,8 +48,10 @@ Keeping version out of the subject means subscribers bind once, with a wildcard,
 and never re-subscribe:
 
 ```
-core.evidence.ingested.*    # every subjectId
-core.evidence.ingested.>    # every subjectId and any deeper segments
+core.evidence.ingested.*        # every subjectId, ingested outcome only
+core.evidence.sealed.*          # every subjectId, sealed outcome only
+core.evidence.quarantined.*     # every subjectId, quarantined outcome only
+core.evidence.>                 # every outcome, every subjectId, any deeper segments
 ```
 
 That single binding survives both a new `subjectId` and a new payload version,

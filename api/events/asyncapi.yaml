@@ -2,7 +2,7 @@
 asyncapi: 3.0.0
 info:
     title: ComplyTime API Events
-    version: 0.1.0
+    version: 0.2.0
     description: |-
         Event contract for the ComplyTime evidence lifecycle.
 
