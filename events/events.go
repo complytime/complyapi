@@ -4,7 +4,7 @@
 // evidence lifecycle.
 package events
 
-//go:generate go run ../cmd/asyncapi-gen -input ./events.go -output ../api/events/asyncapi.yaml -schemas-dir ../api/events/schemas -title "ComplyTime API Events" -version 0.2.0 -description "Event contract for the ComplyTime evidence lifecycle.\n\nAll public events use CloudEvents v1.0 envelope (JSON format).\nThis spec is generated from Go types in the events package via cmd/asyncapi-gen.\nDo not edit manually — run 'go generate ./events/...' to regenerate." -license Apache-2.0 -contact-name ComplyTime -contact-url https://github.com/complytime/complyapi -server nats://localhost:4222
+//go:generate go run ../cmd/asyncapi-gen -input ./events.go -output ../api/events/asyncapi.yaml -schemas-dir ../api/events/schemas -title "ComplyTime API Events" -version 0.3.0 -description "Event contract for the ComplyTime evidence lifecycle.\n\nAll public events use CloudEvents v1.0 envelope (JSON format).\nThis spec is generated from Go types in the events package via cmd/asyncapi-gen.\nDo not edit manually — run 'go generate ./events/...' to regenerate." -license Apache-2.0 -contact-name ComplyTime -contact-url https://github.com/complytime/complyapi -server nats://localhost:4222
 
 import (
 	"errors"
@@ -54,9 +54,8 @@ type EvidenceIngestedData struct {
 
 	ContentDigest string  `json:"contentDigest" asyncapi-field:"description:SHA-256 digest of the evidence artifact"`
 	ArtifactType  string  `json:"artifactType" asyncapi-field:"description:Gemara artifact type"`
-	StorageRef    string  `json:"storageRef" asyncapi-field:"description:URI-style storage reference consumers use to fetch the evidence artifact (must include a scheme prefix, e.g. s3://, gcp://, locker://)"`
-	SubjectID     string  `json:"subjectId" asyncapi-field:"description:Compliance subject identifier"`
-	ShardID       *string `json:"shardId,omitempty" asyncapi-field:"description:Subject shard identifier (null when sharding is not configured)"`
+	StorageRef    string `json:"storageRef" asyncapi-field:"description:URI-style storage reference consumers use to fetch the evidence artifact (must include a scheme prefix, e.g. s3://, gcp://, locker://)"`
+	SubjectID     string `json:"subjectId" asyncapi-field:"description:Compliance subject identifier"`
 }
 
 // NewEvidenceIngestedEvent constructs a CloudEvents v1.0 event with
@@ -109,10 +108,9 @@ type EvidenceSealedData struct {
 	//nolint:unused
 	_ struct{} `asyncapi:"channel:complyapi.evidence.sealed.{subjectId},param:subjectId=The compliance subject identifier,stream:EVIDENCE,type:dev.complytime.evidence.sealed,send:Published when a worker validates and seals evidence into a unit of work,receive:Consume evidence-sealed events,description:Evidence sealing pipeline for compliance artifacts"`
 
-	ContentDigest string  `json:"contentDigest" asyncapi-field:"description:SHA-256 digest of the evidence artifact"`
-	ArtifactType  string  `json:"artifactType" asyncapi-field:"description:Gemara artifact type"`
-	SubjectID     string  `json:"subjectId" asyncapi-field:"description:Compliance subject identifier"`
-	ShardID       *string `json:"shardId,omitempty" asyncapi-field:"description:Subject shard identifier (null when sharding is not configured)"`
+	ContentDigest string `json:"contentDigest" asyncapi-field:"description:SHA-256 digest of the evidence artifact"`
+	ArtifactType  string `json:"artifactType" asyncapi-field:"description:Gemara artifact type"`
+	SubjectID     string `json:"subjectId" asyncapi-field:"description:Compliance subject identifier"`
 }
 
 // NewEvidenceSealedEvent constructs a CloudEvents v1.0 event with the
@@ -158,11 +156,10 @@ type EvidenceQuarantinedData struct {
 	//nolint:unused
 	_ struct{} `asyncapi:"channel:complyapi.evidence.quarantined.{subjectId},param:subjectId=The compliance subject identifier,stream:EVIDENCE,type:dev.complytime.evidence.quarantined,send:Published when a worker fails to validate evidence and quarantines it,receive:Consume evidence-quarantined events,description:Evidence quarantine pipeline for compliance artifacts"`
 
-	ContentDigest string  `json:"contentDigest" asyncapi-field:"description:SHA-256 digest of the evidence artifact"`
-	ArtifactType  string  `json:"artifactType" asyncapi-field:"description:Gemara artifact type"`
-	SubjectID     string  `json:"subjectId" asyncapi-field:"description:Compliance subject identifier"`
-	ShardID       *string `json:"shardId,omitempty" asyncapi-field:"description:Subject shard identifier (null when sharding is not configured)"`
-	Reason        string  `json:"reason" asyncapi-field:"description:Why validation failed"`
+	ContentDigest string `json:"contentDigest" asyncapi-field:"description:SHA-256 digest of the evidence artifact"`
+	ArtifactType  string `json:"artifactType" asyncapi-field:"description:Gemara artifact type"`
+	SubjectID     string `json:"subjectId" asyncapi-field:"description:Compliance subject identifier"`
+	Reason        string `json:"reason" asyncapi-field:"description:Why validation failed"`
 }
 
 // NewEvidenceQuarantinedEvent constructs a CloudEvents v1.0 event with the

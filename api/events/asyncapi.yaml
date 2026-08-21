@@ -2,7 +2,7 @@
 asyncapi: 3.0.0
 info:
     title: ComplyTime API Events
-    version: 0.2.0
+    version: 0.3.0
     description: |-
         Event contract for the ComplyTime evidence lifecycle.
 
@@ -164,9 +164,6 @@ components:
                 contentDigest:
                     type: string
                     description: SHA-256 digest of the evidence artifact
-                shardId:
-                    type: string
-                    description: Subject shard identifier (null when sharding is not configured)
                 storageRef:
                     type: string
                     description: URI-style storage reference consumers use to fetch the evidence artifact (must include a scheme prefix, e.g. s3://, gcp://, locker://)
@@ -230,9 +227,6 @@ components:
                 reason:
                     type: string
                     description: Why validation failed
-                shardId:
-                    type: string
-                    description: Subject shard identifier (null when sharding is not configured)
                 subjectId:
                     type: string
                     description: Compliance subject identifier
@@ -290,9 +284,6 @@ components:
                 contentDigest:
                     type: string
                     description: SHA-256 digest of the evidence artifact
-                shardId:
-                    type: string
-                    description: Subject shard identifier (null when sharding is not configured)
                 subjectId:
                     type: string
                     description: Compliance subject identifier

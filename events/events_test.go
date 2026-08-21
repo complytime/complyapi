@@ -49,52 +49,6 @@ func TestEvidenceIngestedDataJSON(t *testing.T) {
 	}
 }
 
-func TestEvidenceIngestedDataJSONOmitsOptionalFields(t *testing.T) {
-	data := EvidenceIngestedData{
-		ContentDigest: "sha256:abc123",
-		ArtifactType:  "application/vnd.gemara.evaluation-log+json",
-		SubjectID:     "my-app-v1",
-	}
-
-	b, err := json.Marshal(data)
-	if err != nil {
-		t.Fatalf("Marshal: %v", err)
-	}
-
-	raw := make(map[string]interface{})
-	if err := json.Unmarshal(b, &raw); err != nil {
-		t.Fatalf("Unmarshal to map: %v", err)
-	}
-
-	if _, ok := raw["shardId"]; ok {
-		t.Error("shardId should be omitted when nil")
-	}
-}
-
-func TestEvidenceIngestedDataJSONIncludesShardID(t *testing.T) {
-	shard := "shard-1"
-	data := EvidenceIngestedData{
-		ContentDigest: "sha256:abc123",
-		ArtifactType:  "application/vnd.gemara.evaluation-log+json",
-		SubjectID:     "my-app-v1",
-		ShardID:       &shard,
-	}
-
-	b, err := json.Marshal(data)
-	if err != nil {
-		t.Fatalf("Marshal: %v", err)
-	}
-
-	raw := make(map[string]interface{})
-	if err := json.Unmarshal(b, &raw); err != nil {
-		t.Fatalf("Unmarshal to map: %v", err)
-	}
-
-	if raw["shardId"] != "shard-1" {
-		t.Errorf("shardId = %v, want %q", raw["shardId"], "shard-1")
-	}
-}
-
 func TestNewEvidenceIngestedEvent(t *testing.T) {
 	data := EvidenceIngestedData{
 		ContentDigest: "sha256:abc123",

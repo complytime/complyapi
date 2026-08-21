@@ -16,10 +16,6 @@
       "description": "Why validation failed",
       "type": "string"
     },
-    "shardId": {
-      "description": "Subject shard identifier (null when sharding is not configured)",
-      "type": "string"
-    },
     "subjectId": {
       "description": "Compliance subject identifier",
       "type": "string"
