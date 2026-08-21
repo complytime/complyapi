@@ -88,3 +88,91 @@ func NewEvidenceIngestedEvent(source, subject string, data EvidenceIngestedData)
 	}
 	return e, nil
 }
+
+const TypeEvidenceSealed = "dev.complytime.evidence.sealed"
+
+// EvidenceSealedData is the CloudEvents data payload for evidence.sealed
+// events. It carries the same evidence identity as EvidenceIngestedData
+// but signals that a worker has validated the artifact and sealed it into
+// a unit of work.
+type EvidenceSealedData struct {
+	//nolint:unused
+	_ struct{} `asyncapi:"channel:core.evidence.sealed.{subjectId},param:subjectId=The compliance subject identifier,stream:EVIDENCE,type:dev.complytime.evidence.sealed,send:Published when a worker validates and seals evidence into a unit of work,receive:Consume evidence-sealed events,description:Evidence sealing pipeline for compliance artifacts"`
+
+	ContentDigest string  `json:"contentDigest" asyncapi-field:"description:SHA-256 digest of the evidence artifact"`
+	ArtifactType  string  `json:"artifactType" asyncapi-field:"description:Gemara artifact type"`
+	SubjectID     string  `json:"subjectId" asyncapi-field:"description:Compliance subject identifier"`
+	ShardID       *string `json:"shardId,omitempty" asyncapi-field:"description:Subject shard identifier (null when sharding is not configured)"`
+}
+
+// NewEvidenceSealedEvent constructs a CloudEvents v1.0 event with the
+// given source, subject, and data payload for a sealed evidence outcome.
+func NewEvidenceSealedEvent(source, subject string, data EvidenceSealedData) (cloudevents.Event, error) {
+	if source == "" {
+		return cloudevents.Event{}, errors.New("source must not be empty")
+	}
+	if subject == "" {
+		return cloudevents.Event{}, errors.New("subject must not be empty")
+	}
+	if err := validateSubjectID(data.SubjectID); err != nil {
+		return cloudevents.Event{}, err
+	}
+
+	e := event.New(cloudevents.VersionV1)
+	e.SetID(uuid.New().String())
+	e.SetType(TypeEvidenceSealed)
+	e.SetSource(source)
+	e.SetSubject(subject)
+	e.SetTime(time.Now())
+	e.SetDataContentType("application/json")
+	if err := e.SetData(cloudevents.ApplicationJSON, data); err != nil {
+		return cloudevents.Event{}, err
+	}
+	return e, nil
+}
+
+const TypeEvidenceQuarantined = "dev.complytime.evidence.quarantined"
+
+// EvidenceQuarantinedData is the CloudEvents data payload for
+// evidence.quarantined events, published when a worker fails to validate
+// an ingested artifact.
+type EvidenceQuarantinedData struct {
+	//nolint:unused
+	_ struct{} `asyncapi:"channel:core.evidence.quarantined.{subjectId},param:subjectId=The compliance subject identifier,stream:EVIDENCE,type:dev.complytime.evidence.quarantined,send:Published when a worker fails to validate evidence and quarantines it,receive:Consume evidence-quarantined events,description:Evidence quarantine pipeline for compliance artifacts"`
+
+	ContentDigest string  `json:"contentDigest" asyncapi-field:"description:SHA-256 digest of the evidence artifact"`
+	ArtifactType  string  `json:"artifactType" asyncapi-field:"description:Gemara artifact type"`
+	SubjectID     string  `json:"subjectId" asyncapi-field:"description:Compliance subject identifier"`
+	ShardID       *string `json:"shardId,omitempty" asyncapi-field:"description:Subject shard identifier (null when sharding is not configured)"`
+	Reason        string  `json:"reason" asyncapi-field:"description:Why validation failed"`
+}
+
+// NewEvidenceQuarantinedEvent constructs a CloudEvents v1.0 event with the
+// given source, subject, and data payload for a quarantined evidence
+// outcome. data.Reason must not be empty.
+func NewEvidenceQuarantinedEvent(source, subject string, data EvidenceQuarantinedData) (cloudevents.Event, error) {
+	if source == "" {
+		return cloudevents.Event{}, errors.New("source must not be empty")
+	}
+	if subject == "" {
+		return cloudevents.Event{}, errors.New("subject must not be empty")
+	}
+	if err := validateSubjectID(data.SubjectID); err != nil {
+		return cloudevents.Event{}, err
+	}
+	if data.Reason == "" {
+		return cloudevents.Event{}, errors.New("reason must not be empty")
+	}
+
+	e := event.New(cloudevents.VersionV1)
+	e.SetID(uuid.New().String())
+	e.SetType(TypeEvidenceQuarantined)
+	e.SetSource(source)
+	e.SetSubject(subject)
+	e.SetTime(time.Now())
+	e.SetDataContentType("application/json")
+	if err := e.SetData(cloudevents.ApplicationJSON, data); err != nil {
+		return cloudevents.Event{}, err
+	}
+	return e, nil
+}

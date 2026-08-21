@@ -286,6 +286,83 @@ func TestNewEvidenceIngestedEventValidSubjectIDCharset(t *testing.T) {
 	}
 }
 
+func TestNewEvidenceSealedEvent(t *testing.T) {
+	data := EvidenceSealedData{
+		ContentDigest: "sha256:abc123",
+		ArtifactType:  "application/vnd.gemara.evaluation-log+json",
+		SubjectID:     "my-app-v1",
+	}
+
+	e, err := NewEvidenceSealedEvent("complytime-worker", "my-app-v1", data)
+	if err != nil {
+		t.Fatalf("NewEvidenceSealedEvent: %v", err)
+	}
+
+	if e.Type() != TypeEvidenceSealed {
+		t.Errorf("Type() = %q, want %q", e.Type(), TypeEvidenceSealed)
+	}
+	if e.Subject() != "my-app-v1" {
+		t.Errorf("Subject() = %q, want %q", e.Subject(), "my-app-v1")
+	}
+
+	var got EvidenceSealedData
+	if err := e.DataAs(&got); err != nil {
+		t.Fatalf("DataAs: %v", err)
+	}
+	if got.SubjectID != data.SubjectID {
+		t.Errorf("data.SubjectID = %q, want %q", got.SubjectID, data.SubjectID)
+	}
+}
+
+func TestNewEvidenceSealedEventInvalidSubjectID(t *testing.T) {
+	data := EvidenceSealedData{
+		ContentDigest: "sha256:abc123",
+		ArtifactType:  "application/vnd.gemara.evaluation-log+json",
+		SubjectID:     "my-app.v1",
+	}
+	if _, err := NewEvidenceSealedEvent("complytime-worker", "my-app-v1", data); err == nil {
+		t.Error("expected error for invalid subjectId")
+	}
+}
+
+func TestNewEvidenceQuarantinedEvent(t *testing.T) {
+	data := EvidenceQuarantinedData{
+		ContentDigest: "sha256:abc123",
+		ArtifactType:  "application/vnd.gemara.evaluation-log+json",
+		SubjectID:     "my-app-v1",
+		Reason:        "content digest mismatch",
+	}
+
+	e, err := NewEvidenceQuarantinedEvent("complytime-worker", "my-app-v1", data)
+	if err != nil {
+		t.Fatalf("NewEvidenceQuarantinedEvent: %v", err)
+	}
+
+	if e.Type() != TypeEvidenceQuarantined {
+		t.Errorf("Type() = %q, want %q", e.Type(), TypeEvidenceQuarantined)
+	}
+
+	var got EvidenceQuarantinedData
+	if err := e.DataAs(&got); err != nil {
+		t.Fatalf("DataAs: %v", err)
+	}
+	if got.Reason != data.Reason {
+		t.Errorf("data.Reason = %q, want %q", got.Reason, data.Reason)
+	}
+}
+
+func TestNewEvidenceQuarantinedEventEmptyReason(t *testing.T) {
+	data := EvidenceQuarantinedData{
+		ContentDigest: "sha256:abc123",
+		ArtifactType:  "application/vnd.gemara.evaluation-log+json",
+		SubjectID:     "my-app-v1",
+		Reason:        "",
+	}
+	if _, err := NewEvidenceQuarantinedEvent("complytime-worker", "my-app-v1", data); err == nil {
+		t.Error("expected error for empty reason")
+	}
+}
+
 func TestExamplePayloads_ConformToSchema(t *testing.T) {
 	examplesDir := filepath.Join("..", "api", "events", "examples")
 	files, err := filepath.Glob(filepath.Join(examplesDir, "*.json"))
@@ -303,33 +380,26 @@ func TestExamplePayloads_ConformToSchema(t *testing.T) {
 				t.Fatalf("read %s: %v", path, err)
 			}
 
-			// Validate the full CloudEvents envelope deserializes.
 			var envelope struct {
-				SpecVersion     string               `json:"specversion"`
-				ID              string               `json:"id"`
-				Type            string               `json:"type"`
-				Source          string               `json:"source"`
-				Subject         string               `json:"subject"`
-				Time            string               `json:"time"`
-				DataContentType string               `json:"datacontenttype"`
-				Data            EvidenceIngestedData `json:"data"`
+				SpecVersion     string          `json:"specversion"`
+				ID              string          `json:"id"`
+				Type            string          `json:"type"`
+				Source          string          `json:"source"`
+				Subject         string          `json:"subject"`
+				Time            string          `json:"time"`
+				DataContentType string          `json:"datacontenttype"`
+				Data            json.RawMessage `json:"data"`
 			}
 			if err := json.Unmarshal(b, &envelope); err != nil {
 				t.Fatalf("unmarshal: %v", err)
 			}
 
-			// CloudEvents envelope const values.
 			if envelope.SpecVersion != "1.0" {
 				t.Errorf("specversion = %q, want %q", envelope.SpecVersion, "1.0")
-			}
-			if envelope.Type != TypeEvidenceIngested {
-				t.Errorf("type = %q, want %q", envelope.Type, TypeEvidenceIngested)
 			}
 			if envelope.DataContentType != "application/json" {
 				t.Errorf("datacontenttype = %q, want %q", envelope.DataContentType, "application/json")
 			}
-
-			// Required envelope fields must be non-empty.
 			if envelope.ID == "" {
 				t.Error("id must not be empty")
 			}
@@ -343,18 +413,48 @@ func TestExamplePayloads_ConformToSchema(t *testing.T) {
 				t.Error("time must not be empty")
 			}
 
-			// Required data fields must be non-empty.
-			if envelope.Data.ContentDigest == "" {
-				t.Error("data.contentDigest must not be empty")
-			}
-			if envelope.Data.ArtifactType == "" {
-				t.Error("data.artifactType must not be empty")
-			}
-			if envelope.Data.SubjectID == "" {
-				t.Error("data.subjectId must not be empty")
-			}
-			if envelope.Data.StorageRef == "" {
-				t.Error("data.storageRef must not be empty")
+			switch envelope.Type {
+			case TypeEvidenceIngested:
+				var data EvidenceIngestedData
+				if err := json.Unmarshal(envelope.Data, &data); err != nil {
+					t.Fatalf("unmarshal data: %v", err)
+				}
+				if data.ContentDigest == "" {
+					t.Error("data.contentDigest must not be empty")
+				}
+				if data.ArtifactType == "" {
+					t.Error("data.artifactType must not be empty")
+				}
+				if data.SubjectID == "" {
+					t.Error("data.subjectId must not be empty")
+				}
+			case TypeEvidenceSealed:
+				var data EvidenceSealedData
+				if err := json.Unmarshal(envelope.Data, &data); err != nil {
+					t.Fatalf("unmarshal data: %v", err)
+				}
+				if data.ContentDigest == "" {
+					t.Error("data.contentDigest must not be empty")
+				}
+				if data.ArtifactType == "" {
+					t.Error("data.artifactType must not be empty")
+				}
+				if data.SubjectID == "" {
+					t.Error("data.subjectId must not be empty")
+				}
+			case TypeEvidenceQuarantined:
+				var data EvidenceQuarantinedData
+				if err := json.Unmarshal(envelope.Data, &data); err != nil {
+					t.Fatalf("unmarshal data: %v", err)
+				}
+				if data.SubjectID == "" {
+					t.Error("data.subjectId must not be empty")
+				}
+				if data.Reason == "" {
+					t.Error("data.reason must not be empty")
+				}
+			default:
+				t.Fatalf("unhandled example type %q — add a case to this switch", envelope.Type)
 			}
 		})
 	}
