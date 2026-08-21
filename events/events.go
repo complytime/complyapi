@@ -21,7 +21,7 @@ import (
 // literal NATS subject token: alphanumerics, dash, and underscore. It
 // excludes ".", "*", and ">" — the NATS token separator and wildcards — so
 // a subjectId can never reshape or collide with a subscriber's wildcard
-// binding (e.g. "core.evidence.ingested.*").
+// binding (e.g. "complyapi.evidence.ingested.*").
 var subjectIDPattern = regexp.MustCompile(`^[A-Za-z0-9_-]+$`)
 
 // storageRefPattern requires storageRef to carry a URI-style scheme prefix
@@ -50,7 +50,7 @@ const TypeEvidenceIngested = "dev.complytime.evidence.ingested"
 // evidence.ingested events.
 type EvidenceIngestedData struct {
 	//nolint:unused
-	_ struct{} `asyncapi:"channel:core.evidence.ingested.{subjectId},param:subjectId=The compliance subject identifier,stream:EVIDENCE,type:dev.complytime.evidence.ingested,send:Published when evidence is accepted for processing; before sealing,receive:Consume evidence-ingested events,description:Evidence ingestion pipeline for compliance artifacts"`
+	_ struct{} `asyncapi:"channel:complyapi.evidence.ingested.{subjectId},param:subjectId=The compliance subject identifier,stream:EVIDENCE,type:dev.complytime.evidence.ingested,send:Published when evidence is accepted for processing; before sealing,receive:Consume evidence-ingested events,description:Evidence ingestion pipeline for compliance artifacts"`
 
 	ContentDigest string  `json:"contentDigest" asyncapi-field:"description:SHA-256 digest of the evidence artifact"`
 	ArtifactType  string  `json:"artifactType" asyncapi-field:"description:Gemara artifact type"`
@@ -107,7 +107,7 @@ const TypeEvidenceSealed = "dev.complytime.evidence.sealed"
 // a unit of work.
 type EvidenceSealedData struct {
 	//nolint:unused
-	_ struct{} `asyncapi:"channel:core.evidence.sealed.{subjectId},param:subjectId=The compliance subject identifier,stream:EVIDENCE,type:dev.complytime.evidence.sealed,send:Published when a worker validates and seals evidence into a unit of work,receive:Consume evidence-sealed events,description:Evidence sealing pipeline for compliance artifacts"`
+	_ struct{} `asyncapi:"channel:complyapi.evidence.sealed.{subjectId},param:subjectId=The compliance subject identifier,stream:EVIDENCE,type:dev.complytime.evidence.sealed,send:Published when a worker validates and seals evidence into a unit of work,receive:Consume evidence-sealed events,description:Evidence sealing pipeline for compliance artifacts"`
 
 	ContentDigest string  `json:"contentDigest" asyncapi-field:"description:SHA-256 digest of the evidence artifact"`
 	ArtifactType  string  `json:"artifactType" asyncapi-field:"description:Gemara artifact type"`
@@ -156,7 +156,7 @@ const TypeEvidenceQuarantined = "dev.complytime.evidence.quarantined"
 // an ingested artifact.
 type EvidenceQuarantinedData struct {
 	//nolint:unused
-	_ struct{} `asyncapi:"channel:core.evidence.quarantined.{subjectId},param:subjectId=The compliance subject identifier,stream:EVIDENCE,type:dev.complytime.evidence.quarantined,send:Published when a worker fails to validate evidence and quarantines it,receive:Consume evidence-quarantined events,description:Evidence quarantine pipeline for compliance artifacts"`
+	_ struct{} `asyncapi:"channel:complyapi.evidence.quarantined.{subjectId},param:subjectId=The compliance subject identifier,stream:EVIDENCE,type:dev.complytime.evidence.quarantined,send:Published when a worker fails to validate evidence and quarantines it,receive:Consume evidence-quarantined events,description:Evidence quarantine pipeline for compliance artifacts"`
 
 	ContentDigest string  `json:"contentDigest" asyncapi-field:"description:SHA-256 digest of the evidence artifact"`
 	ArtifactType  string  `json:"artifactType" asyncapi-field:"description:Gemara artifact type"`

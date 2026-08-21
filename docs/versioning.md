@@ -23,7 +23,7 @@ subscribers or signals nothing.
 
 | Layer | Field | Example | Versions | Reacts |
 |-------|-------|---------|----------|--------|
-| NATS subject | channel address | `core.evidence.ingested.{subjectId}` | Nothing — routing address only | Broker (routing) |
+| NATS subject | channel address | `complyapi.evidence.ingested.{subjectId}` | Nothing — routing address only | Broker (routing) |
 | CloudEvents type | `type` | `dev.complytime.evidence.ingested` | The event's payload contract (breaking changes) | Consumer per-message dispatch |
 | AsyncAPI contract | `info.version` | `0.2.0` | The whole published contract | Humans, codegen tooling |
 | CloudEvents envelope | `specversion` | `1.0` | The CNCF envelope format — not ours | Nobody (hands off) |
@@ -32,10 +32,11 @@ subscribers or signals nothing.
 
 The subject is where a subscriber listens (ADR-0020). In this codebase that
 hierarchy is `domain.entity.action.{param}` — e.g.
-`core.evidence.ingested.{subjectId}`, `core.evidence.sealed.{subjectId}`,
-`core.evidence.quarantined.{subjectId}`. The subject's `domain` segment
-(`core`) is a routing namespace only — it does not need to match the
-CloudEvents `type`'s reverse-DNS namespace (`dev.complytime`). The two
+`complyapi.evidence.ingested.{subjectId}`, `complyapi.evidence.sealed.{subjectId}`,
+`complyapi.evidence.quarantined.{subjectId}`. The subject's `domain` segment
+(`complyapi`) names the library/service that owns this event contract — it
+is a routing namespace only, and it does not need to match the CloudEvents
+`type`'s reverse-DNS namespace (`dev.complytime`, the org's domain). The two
 namespaces serve different audiences: the subject namespace scopes NATS
 routing/permissions, the `type` namespace scopes payload-contract identity.
 Do not infer one from the other; dispatch on `type`, subscribe on subject.
@@ -48,10 +49,10 @@ Keeping version out of the subject means subscribers bind once, with a wildcard,
 and never re-subscribe:
 
 ```
-core.evidence.ingested.*        # every subjectId, ingested outcome only
-core.evidence.sealed.*          # every subjectId, sealed outcome only
-core.evidence.quarantined.*     # every subjectId, quarantined outcome only
-core.evidence.>                 # every outcome, every subjectId, any deeper segments
+complyapi.evidence.ingested.*        # every subjectId, ingested outcome only
+complyapi.evidence.sealed.*          # every subjectId, sealed outcome only
+complyapi.evidence.quarantined.*     # every subjectId, quarantined outcome only
+complyapi.evidence.>                 # every outcome, every subjectId, any deeper segments
 ```
 
 That single binding survives both a new `subjectId` and a new payload version,

@@ -21,7 +21,7 @@ servers:
         protocol: nats
 channels:
     evidenceIngested:
-        address: core.evidence.ingested.{subjectId}
+        address: complyapi.evidence.ingested.{subjectId}
         description: Evidence ingestion pipeline for compliance artifacts
         parameters:
             subjectId:
@@ -30,7 +30,7 @@ channels:
             EvidenceIngested:
                 $ref: '#/components/messages/EvidenceIngested'
     evidenceQuarantined:
-        address: core.evidence.quarantined.{subjectId}
+        address: complyapi.evidence.quarantined.{subjectId}
         description: Evidence quarantine pipeline for compliance artifacts
         parameters:
             subjectId:
@@ -39,7 +39,7 @@ channels:
             EvidenceQuarantined:
                 $ref: '#/components/messages/EvidenceQuarantined'
     evidenceSealed:
-        address: core.evidence.sealed.{subjectId}
+        address: complyapi.evidence.sealed.{subjectId}
         description: Evidence sealing pipeline for compliance artifacts
         parameters:
             subjectId:

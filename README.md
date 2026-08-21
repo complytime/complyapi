@@ -118,7 +118,7 @@ task check
 
    Example sentinel field:
    ```go
-   _ struct{} `asyncapi:"channel:core.widget.created.{ownerId},param:ownerId=The widget owner,stream:WIDGETS,type:dev.complytime.widget.created,send:Published when a widget is created,receive:Consume widget-created events,description:Widget creation pipeline"`
+   _ struct{} `asyncapi:"channel:complyapi.widget.created.{ownerId},param:ownerId=The widget owner,stream:WIDGETS,type:dev.complytime.widget.created,send:Published when a widget is created,receive:Consume widget-created events,description:Widget creation pipeline"`
    ```
 
 2. Add `asyncapi-field:"description:..."` tags on each struct field for
