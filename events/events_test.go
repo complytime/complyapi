@@ -3,12 +3,14 @@
 package events
 
 import (
+	"bytes"
 	"encoding/json"
 	"os"
 	"path/filepath"
 	"testing"
 
 	cloudevents "github.com/cloudevents/sdk-go/v2"
+	"github.com/santhosh-tekuri/jsonschema/v6"
 )
 
 func TestTypeEvidenceIngestedConstant(t *testing.T) {
@@ -266,6 +268,7 @@ func TestNewEvidenceSealedEvent(t *testing.T) {
 	data := EvidenceSealedData{
 		ContentDigest: "sha256:abc123",
 		ArtifactType:  "application/vnd.gemara.evaluation-log+json",
+		StorageRef:    "s3://evidence/abc123",
 		SubjectID:     "my-app-v1",
 	}
 
@@ -287,6 +290,32 @@ func TestNewEvidenceSealedEvent(t *testing.T) {
 	}
 	if got.SubjectID != data.SubjectID {
 		t.Errorf("data.SubjectID = %q, want %q", got.SubjectID, data.SubjectID)
+	}
+	if got.StorageRef != data.StorageRef {
+		t.Errorf("data.StorageRef = %q, want %q", got.StorageRef, data.StorageRef)
+	}
+}
+
+func TestNewEvidenceSealedEventEmptyStorageRef(t *testing.T) {
+	data := EvidenceSealedData{
+		ContentDigest: "sha256:abc123",
+		ArtifactType:  "application/vnd.gemara.evaluation-log+json",
+		SubjectID:     "my-app-v1",
+	}
+	if _, err := NewEvidenceSealedEvent("complytime-worker", "my-app-v1", data); err == nil {
+		t.Error("expected error for empty storageRef")
+	}
+}
+
+func TestNewEvidenceSealedEventInvalidStorageRef(t *testing.T) {
+	data := EvidenceSealedData{
+		ContentDigest: "sha256:abc123",
+		ArtifactType:  "application/vnd.gemara.evaluation-log+json",
+		StorageRef:    "evidence-bucket/abc123",
+		SubjectID:     "my-app-v1",
+	}
+	if _, err := NewEvidenceSealedEvent("complytime-worker", "my-app-v1", data); err == nil {
+		t.Error("expected error for storageRef without a URI scheme prefix")
 	}
 }
 
@@ -382,7 +411,44 @@ func TestNewEvidenceQuarantinedEventEmptyArtifactType(t *testing.T) {
 }
 
 func TestExamplePayloads_ConformToSchema(t *testing.T) {
+	schemasDir := filepath.Join("..", "api", "events", "schemas")
 	examplesDir := filepath.Join("..", "api", "events", "examples")
+
+	// Register every generated schema with the compiler under a stable
+	// in-memory URL. The relative $id in each schema resolves against its
+	// registration URL, so the CloudEvent envelope's cross-file $ref to its
+	// *Data schema (e.g. "EvidenceIngestedData.schema.json") resolves too.
+	const base = "mem:///"
+	schemaFiles, err := filepath.Glob(filepath.Join(schemasDir, "*.schema.json"))
+	if err != nil {
+		t.Fatalf("glob schemas: %v", err)
+	}
+	if len(schemaFiles) == 0 {
+		t.Fatal("no schema files found in api/events/schemas/")
+	}
+	compiler := jsonschema.NewCompiler()
+	for _, path := range schemaFiles {
+		b, err := os.ReadFile(path)
+		if err != nil {
+			t.Fatalf("read schema %s: %v", path, err)
+		}
+		doc, err := jsonschema.UnmarshalJSON(bytes.NewReader(b))
+		if err != nil {
+			t.Fatalf("parse schema %s: %v", path, err)
+		}
+		if err := compiler.AddResource(base+filepath.Base(path), doc); err != nil {
+			t.Fatalf("add schema %s: %v", path, err)
+		}
+	}
+
+	// envelopeSchema maps a CloudEvents type to the envelope schema that
+	// validates a full example payload (envelope plus data) for that type.
+	envelopeSchema := map[string]string{
+		TypeEvidenceIngested:    "EvidenceIngestedCloudEvent.schema.json",
+		TypeEvidenceSealed:      "EvidenceSealedCloudEvent.schema.json",
+		TypeEvidenceQuarantined: "EvidenceQuarantinedCloudEvent.schema.json",
+	}
+
 	files, err := filepath.Glob(filepath.Join(examplesDir, "*.json"))
 	if err != nil {
 		t.Fatalf("glob examples: %v", err)
@@ -398,84 +464,29 @@ func TestExamplePayloads_ConformToSchema(t *testing.T) {
 				t.Fatalf("read %s: %v", path, err)
 			}
 
+			// The CloudEvents type selects which envelope schema applies.
 			var envelope struct {
-				SpecVersion     string          `json:"specversion"`
-				ID              string          `json:"id"`
-				Type            string          `json:"type"`
-				Source          string          `json:"source"`
-				Subject         string          `json:"subject"`
-				Time            string          `json:"time"`
-				DataContentType string          `json:"datacontenttype"`
-				Data            json.RawMessage `json:"data"`
+				Type string `json:"type"`
 			}
 			if err := json.Unmarshal(b, &envelope); err != nil {
-				t.Fatalf("unmarshal: %v", err)
+				t.Fatalf("unmarshal type: %v", err)
+			}
+			schemaFile, ok := envelopeSchema[envelope.Type]
+			if !ok {
+				t.Fatalf("unhandled example type %q — add it to envelopeSchema", envelope.Type)
 			}
 
-			if envelope.SpecVersion != "1.0" {
-				t.Errorf("specversion = %q, want %q", envelope.SpecVersion, "1.0")
-			}
-			if envelope.DataContentType != "application/json" {
-				t.Errorf("datacontenttype = %q, want %q", envelope.DataContentType, "application/json")
-			}
-			if envelope.ID == "" {
-				t.Error("id must not be empty")
-			}
-			if envelope.Source == "" {
-				t.Error("source must not be empty")
-			}
-			if envelope.Subject == "" {
-				t.Error("subject must not be empty")
-			}
-			if envelope.Time == "" {
-				t.Error("time must not be empty")
+			sch, err := compiler.Compile(base + schemaFile)
+			if err != nil {
+				t.Fatalf("compile %s: %v", schemaFile, err)
 			}
 
-			switch envelope.Type {
-			case TypeEvidenceIngested:
-				var data EvidenceIngestedData
-				if err := json.Unmarshal(envelope.Data, &data); err != nil {
-					t.Fatalf("unmarshal data: %v", err)
-				}
-				if data.ContentDigest == "" {
-					t.Error("data.contentDigest must not be empty")
-				}
-				if data.ArtifactType == "" {
-					t.Error("data.artifactType must not be empty")
-				}
-				if data.SubjectID == "" {
-					t.Error("data.subjectId must not be empty")
-				}
-				if data.StorageRef == "" {
-					t.Error("data.storageRef must not be empty")
-				}
-			case TypeEvidenceSealed:
-				var data EvidenceSealedData
-				if err := json.Unmarshal(envelope.Data, &data); err != nil {
-					t.Fatalf("unmarshal data: %v", err)
-				}
-				if data.ContentDigest == "" {
-					t.Error("data.contentDigest must not be empty")
-				}
-				if data.ArtifactType == "" {
-					t.Error("data.artifactType must not be empty")
-				}
-				if data.SubjectID == "" {
-					t.Error("data.subjectId must not be empty")
-				}
-			case TypeEvidenceQuarantined:
-				var data EvidenceQuarantinedData
-				if err := json.Unmarshal(envelope.Data, &data); err != nil {
-					t.Fatalf("unmarshal data: %v", err)
-				}
-				if data.SubjectID == "" {
-					t.Error("data.subjectId must not be empty")
-				}
-				if data.Reason == "" {
-					t.Error("data.reason must not be empty")
-				}
-			default:
-				t.Fatalf("unhandled example type %q — add a case to this switch", envelope.Type)
+			inst, err := jsonschema.UnmarshalJSON(bytes.NewReader(b))
+			if err != nil {
+				t.Fatalf("parse example %s: %v", path, err)
+			}
+			if err := sch.Validate(inst); err != nil {
+				t.Errorf("%s does not conform to %s:\n%v", filepath.Base(path), schemaFile, err)
 			}
 		})
 	}

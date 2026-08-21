@@ -4,7 +4,7 @@
 // evidence lifecycle.
 package events
 
-//go:generate go run ../cmd/asyncapi-gen -input ./events.go -output ../api/events/asyncapi.yaml -schemas-dir ../api/events/schemas -title "ComplyTime API Events" -version 0.3.0 -description "Event contract for the ComplyTime evidence lifecycle.\n\nAll public events use CloudEvents v1.0 envelope (JSON format).\nThis spec is generated from Go types in the events package via cmd/asyncapi-gen.\nDo not edit manually — run 'go generate ./events/...' to regenerate." -license Apache-2.0 -contact-name ComplyTime -contact-url https://github.com/complytime/complyapi -server nats://localhost:4222
+//go:generate go run ../cmd/asyncapi-gen -input ./events.go -output ../api/events/asyncapi.yaml -schemas-dir ../api/events/schemas -title "ComplyTime API Events" -version 0.2.0 -description "Event contract for the ComplyTime evidence lifecycle.\n\nAll public events use CloudEvents v1.0 envelope (JSON format).\nThis spec is generated from Go types in the events package via cmd/asyncapi-gen.\nDo not edit manually — run 'go generate ./events/...' to regenerate." -license Apache-2.0 -contact-name ComplyTime -contact-url https://github.com/complytime/complyapi -server nats://localhost:4222
 
 import (
 	"errors"
@@ -42,6 +42,18 @@ func validateSubjectID(subjectID string) error {
 	return nil
 }
 
+// validateStorageRef returns an error if storageRef is empty or lacks a
+// URI-style scheme prefix (e.g. "s3://", "gcp://", "locker://").
+func validateStorageRef(storageRef string) error {
+	if storageRef == "" {
+		return errors.New("storageRef must not be empty")
+	}
+	if !storageRefPattern.MatchString(storageRef) {
+		return fmt.Errorf("storageRef %q must have a URI scheme prefix (e.g. s3://, gcp://, locker://)", storageRef)
+	}
+	return nil
+}
+
 // TypeEvidenceIngested is the CloudEvents type for evidence accepted for
 // processing, before validation.
 const TypeEvidenceIngested = "dev.complytime.evidence.ingested"
@@ -52,8 +64,8 @@ type EvidenceIngestedData struct {
 	//nolint:unused
 	_ struct{} `asyncapi:"channel:complyapi.evidence.ingested.{subjectId},param:subjectId=The compliance subject identifier,stream:EVIDENCE,type:dev.complytime.evidence.ingested,send:Published when evidence is accepted for processing; before sealing,receive:Consume evidence-ingested events,description:Evidence ingestion pipeline for compliance artifacts"`
 
-	ContentDigest string  `json:"contentDigest" asyncapi-field:"description:SHA-256 digest of the evidence artifact"`
-	ArtifactType  string  `json:"artifactType" asyncapi-field:"description:Gemara artifact type"`
+	ContentDigest string `json:"contentDigest" asyncapi-field:"description:SHA-256 digest of the evidence artifact"`
+	ArtifactType  string `json:"artifactType" asyncapi-field:"description:Gemara artifact type"`
 	StorageRef    string `json:"storageRef" asyncapi-field:"description:URI-style storage reference consumers use to fetch the evidence artifact (must include a scheme prefix, e.g. s3://, gcp://, locker://)"`
 	SubjectID     string `json:"subjectId" asyncapi-field:"description:Compliance subject identifier"`
 }
@@ -76,11 +88,8 @@ func NewEvidenceIngestedEvent(source, subject string, data EvidenceIngestedData)
 	if data.ArtifactType == "" {
 		return cloudevents.Event{}, errors.New("artifactType must not be empty")
 	}
-	if data.StorageRef == "" {
-		return cloudevents.Event{}, errors.New("storageRef must not be empty")
-	}
-	if !storageRefPattern.MatchString(data.StorageRef) {
-		return cloudevents.Event{}, fmt.Errorf("storageRef %q must have a URI scheme prefix (e.g. s3://, gcp://, locker://)", data.StorageRef)
+	if err := validateStorageRef(data.StorageRef); err != nil {
+		return cloudevents.Event{}, err
 	}
 
 	e := event.New(cloudevents.VersionV1)
@@ -110,6 +119,7 @@ type EvidenceSealedData struct {
 
 	ContentDigest string `json:"contentDigest" asyncapi-field:"description:SHA-256 digest of the evidence artifact"`
 	ArtifactType  string `json:"artifactType" asyncapi-field:"description:Gemara artifact type"`
+	StorageRef    string `json:"storageRef" asyncapi-field:"description:URI-style storage reference to the sealed WORM evidence object consumers fetch (must include a scheme prefix, e.g. s3://, gcp://, locker://)"`
 	SubjectID     string `json:"subjectId" asyncapi-field:"description:Compliance subject identifier"`
 }
 
@@ -130,6 +140,9 @@ func NewEvidenceSealedEvent(source, subject string, data EvidenceSealedData) (cl
 	}
 	if data.ArtifactType == "" {
 		return cloudevents.Event{}, errors.New("artifactType must not be empty")
+	}
+	if err := validateStorageRef(data.StorageRef); err != nil {
+		return cloudevents.Event{}, err
 	}
 
 	e := event.New(cloudevents.VersionV1)

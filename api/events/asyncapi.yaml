@@ -2,7 +2,7 @@
 asyncapi: 3.0.0
 info:
     title: ComplyTime API Events
-    version: 0.3.0
+    version: 0.2.0
     description: |-
         Event contract for the ComplyTime evidence lifecycle.
 
@@ -276,6 +276,7 @@ components:
             required:
                 - contentDigest
                 - artifactType
+                - storageRef
                 - subjectId
             properties:
                 artifactType:
@@ -284,6 +285,9 @@ components:
                 contentDigest:
                     type: string
                     description: SHA-256 digest of the evidence artifact
+                storageRef:
+                    type: string
+                    description: URI-style storage reference to the sealed WORM evidence object consumers fetch (must include a scheme prefix, e.g. s3://, gcp://, locker://)
                 subjectId:
                     type: string
                     description: Compliance subject identifier

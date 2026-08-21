@@ -38,7 +38,7 @@ type FieldSpec struct {
 // per annotated struct. Returns an error if the file cannot be parsed or
 // a required tag key is missing.
 func ParseFile(path string) ([]EventSpec, error) {
-	src, err := os.ReadFile(path)
+	src, err := os.ReadFile(path) //nolint:gosec // G703: path is the developer-supplied -input flag from the go:generate directive, not untrusted input
 	if err != nil {
 		return nil, fmt.Errorf("reading file: %w", err)
 	}
