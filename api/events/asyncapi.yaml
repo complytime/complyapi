@@ -2,7 +2,7 @@
 asyncapi: 3.0.0
 info:
     title: ComplyTime API Events
-    version: 0.1.0
+    version: 0.2.0
     description: |-
         Event contract for the ComplyTime evidence lifecycle.
 
@@ -21,7 +21,7 @@ servers:
         protocol: nats
 channels:
     evidenceIngested:
-        address: core.evidence.ingested.{subjectId}
+        address: complyapi.evidence.ingested.{subjectId}
         description: Evidence ingestion pipeline for compliance artifacts
         parameters:
             subjectId:
@@ -29,17 +29,63 @@ channels:
         messages:
             EvidenceIngested:
                 $ref: '#/components/messages/EvidenceIngested'
+    evidenceQuarantined:
+        address: complyapi.evidence.quarantined.{subjectId}
+        description: Evidence quarantine pipeline for compliance artifacts
+        parameters:
+            subjectId:
+                description: The compliance subject identifier
+        messages:
+            EvidenceQuarantined:
+                $ref: '#/components/messages/EvidenceQuarantined'
+    evidenceSealed:
+        address: complyapi.evidence.sealed.{subjectId}
+        description: Evidence sealing pipeline for compliance artifacts
+        parameters:
+            subjectId:
+                description: The compliance subject identifier
+        messages:
+            EvidenceSealed:
+                $ref: '#/components/messages/EvidenceSealed'
 operations:
     consumeEvidenceIngested:
         action: receive
         summary: Consume evidence-ingested events
         channel:
             $ref: '#/channels/evidenceIngested'
+    consumeEvidenceQuarantined:
+        action: receive
+        summary: Consume evidence-quarantined events
+        channel:
+            $ref: '#/channels/evidenceQuarantined'
+    consumeEvidenceSealed:
+        action: receive
+        summary: Consume evidence-sealed events
+        channel:
+            $ref: '#/channels/evidenceSealed'
     publishEvidenceIngested:
         action: send
         summary: Published when evidence is accepted for processing; before sealing
         channel:
             $ref: '#/channels/evidenceIngested'
+        bindings:
+            nats:
+                x-stream: EVIDENCE
+                bindingVersion: 0.1.0
+    publishEvidenceQuarantined:
+        action: send
+        summary: Published when a worker fails to validate evidence and quarantines it
+        channel:
+            $ref: '#/channels/evidenceQuarantined'
+        bindings:
+            nats:
+                x-stream: EVIDENCE
+                bindingVersion: 0.1.0
+    publishEvidenceSealed:
+        action: send
+        summary: Published when a worker validates and seals evidence into a unit of work
+        channel:
+            $ref: '#/channels/evidenceSealed'
         bindings:
             nats:
                 x-stream: EVIDENCE
@@ -52,6 +98,18 @@ components:
             contentType: application/cloudevents+json
             payload:
                 $ref: '#/components/schemas/EvidenceIngestedCloudEvent'
+        EvidenceQuarantined:
+            name: EvidenceQuarantined
+            title: Evidence Quarantined
+            contentType: application/cloudevents+json
+            payload:
+                $ref: '#/components/schemas/EvidenceQuarantinedCloudEvent'
+        EvidenceSealed:
+            name: EvidenceSealed
+            title: Evidence Sealed
+            contentType: application/cloudevents+json
+            payload:
+                $ref: '#/components/schemas/EvidenceSealedCloudEvent'
     schemas:
         EvidenceIngestedCloudEvent:
             type: object
@@ -97,6 +155,7 @@ components:
             required:
                 - contentDigest
                 - artifactType
+                - storageRef
                 - subjectId
             properties:
                 artifactType:
@@ -105,12 +164,130 @@ components:
                 contentDigest:
                     type: string
                     description: SHA-256 digest of the evidence artifact
-                shardId:
-                    type: string
-                    description: Subject shard identifier (null when sharding is not configured)
                 storageRef:
                     type: string
-                    description: Internal storage reference
+                    description: URI-style storage reference consumers use to fetch the evidence artifact (must include a scheme prefix, e.g. s3://, gcp://, locker://)
+                subjectId:
+                    type: string
+                    description: Compliance subject identifier
+        EvidenceQuarantinedCloudEvent:
+            type: object
+            description: CloudEvents v1.0 envelope for dev.complytime.evidence.quarantined
+            required:
+                - specversion
+                - id
+                - type
+                - source
+                - subject
+                - time
+                - datacontenttype
+                - data
+            properties:
+                data:
+                    $ref: '#/components/schemas/EvidenceQuarantinedData'
+                datacontenttype:
+                    type: string
+                    const: application/json
+                id:
+                    type: string
+                    format: uuid
+                source:
+                    type: string
+                    description: URI identifying the producing service
+                specversion:
+                    type: string
+                    const: "1.0"
+                subject:
+                    type: string
+                    description: The compliance subject identifier
+                time:
+                    type: string
+                    format: date-time
+                type:
+                    type: string
+                    const: dev.complytime.evidence.quarantined
+        EvidenceQuarantinedData:
+            type: object
+            description: |-
+                EvidenceQuarantinedData is the CloudEvents data payload for
+                evidence.quarantined events, published when a worker fails to validate
+                an ingested artifact.
+            required:
+                - contentDigest
+                - artifactType
+                - subjectId
+                - reason
+            properties:
+                artifactType:
+                    type: string
+                    description: Gemara artifact type
+                contentDigest:
+                    type: string
+                    description: SHA-256 digest of the evidence artifact
+                reason:
+                    type: string
+                    description: Why validation failed
+                subjectId:
+                    type: string
+                    description: Compliance subject identifier
+        EvidenceSealedCloudEvent:
+            type: object
+            description: CloudEvents v1.0 envelope for dev.complytime.evidence.sealed
+            required:
+                - specversion
+                - id
+                - type
+                - source
+                - subject
+                - time
+                - datacontenttype
+                - data
+            properties:
+                data:
+                    $ref: '#/components/schemas/EvidenceSealedData'
+                datacontenttype:
+                    type: string
+                    const: application/json
+                id:
+                    type: string
+                    format: uuid
+                source:
+                    type: string
+                    description: URI identifying the producing service
+                specversion:
+                    type: string
+                    const: "1.0"
+                subject:
+                    type: string
+                    description: The compliance subject identifier
+                time:
+                    type: string
+                    format: date-time
+                type:
+                    type: string
+                    const: dev.complytime.evidence.sealed
+        EvidenceSealedData:
+            type: object
+            description: |-
+                EvidenceSealedData is the CloudEvents data payload for evidence.sealed
+                events. It carries the same evidence identity as EvidenceIngestedData
+                but signals that a worker has validated the artifact and sealed it into
+                a unit of work.
+            required:
+                - contentDigest
+                - artifactType
+                - storageRef
+                - subjectId
+            properties:
+                artifactType:
+                    type: string
+                    description: Gemara artifact type
+                contentDigest:
+                    type: string
+                    description: SHA-256 digest of the evidence artifact
+                storageRef:
+                    type: string
+                    description: URI-style storage reference to the sealed WORM evidence object consumers fetch (must include a scheme prefix, e.g. s3://, gcp://, locker://)
                 subjectId:
                     type: string
                     description: Compliance subject identifier

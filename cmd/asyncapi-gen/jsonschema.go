@@ -80,7 +80,7 @@ func BuildEnvelopeJSONSchema(spec EventSpec) JSONSchema {
 // each event spec to the given directory. Creates the directory if it
 // does not exist.
 func WriteJSONSchemas(specs []EventSpec, dir string) error {
-	if err := os.MkdirAll(dir, 0o755); err != nil {
+	if err := os.MkdirAll(dir, 0o755); err != nil { //nolint:gosec // G703: dir is the developer-supplied -schemas-dir flag from the go:generate directive, not untrusted input; 0o755 is correct for output directories (SC-005)
 		return fmt.Errorf("creating schemas directory: %w", err)
 	}
 
