@@ -194,6 +194,28 @@ func TestNewEvidenceIngestedEventEmptySubject(t *testing.T) {
 	}
 }
 
+func TestNewEvidenceIngestedEventEmptyContentDigest(t *testing.T) {
+	data := EvidenceIngestedData{
+		ArtifactType: "application/vnd.gemara.evaluation-log+json",
+		StorageRef:   "locker://ref/123",
+		SubjectID:    "my-app-v1",
+	}
+	if _, err := NewEvidenceIngestedEvent("complytime-gateway", "my-app-v1", data); err == nil {
+		t.Error("expected error for empty contentDigest")
+	}
+}
+
+func TestNewEvidenceIngestedEventEmptyArtifactType(t *testing.T) {
+	data := EvidenceIngestedData{
+		ContentDigest: "sha256:abc123",
+		StorageRef:    "locker://ref/123",
+		SubjectID:     "my-app-v1",
+	}
+	if _, err := NewEvidenceIngestedEvent("complytime-gateway", "my-app-v1", data); err == nil {
+		t.Error("expected error for empty artifactType")
+	}
+}
+
 func TestNewEvidenceIngestedEventWireFormatRoundTrip(t *testing.T) {
 	data := EvidenceIngestedData{
 		ContentDigest: "sha256:abc123",
@@ -325,6 +347,26 @@ func TestNewEvidenceSealedEventInvalidSubjectID(t *testing.T) {
 	}
 }
 
+func TestNewEvidenceSealedEventEmptyContentDigest(t *testing.T) {
+	data := EvidenceSealedData{
+		ArtifactType: "application/vnd.gemara.evaluation-log+json",
+		SubjectID:    "my-app-v1",
+	}
+	if _, err := NewEvidenceSealedEvent("complytime-worker", "my-app-v1", data); err == nil {
+		t.Error("expected error for empty contentDigest")
+	}
+}
+
+func TestNewEvidenceSealedEventEmptyArtifactType(t *testing.T) {
+	data := EvidenceSealedData{
+		ContentDigest: "sha256:abc123",
+		SubjectID:     "my-app-v1",
+	}
+	if _, err := NewEvidenceSealedEvent("complytime-worker", "my-app-v1", data); err == nil {
+		t.Error("expected error for empty artifactType")
+	}
+}
+
 func TestNewEvidenceQuarantinedEvent(t *testing.T) {
 	data := EvidenceQuarantinedData{
 		ContentDigest: "sha256:abc123",
@@ -360,6 +402,28 @@ func TestNewEvidenceQuarantinedEventEmptyReason(t *testing.T) {
 	}
 	if _, err := NewEvidenceQuarantinedEvent("complytime-worker", "my-app-v1", data); err == nil {
 		t.Error("expected error for empty reason")
+	}
+}
+
+func TestNewEvidenceQuarantinedEventEmptyContentDigest(t *testing.T) {
+	data := EvidenceQuarantinedData{
+		ArtifactType: "application/vnd.gemara.evaluation-log+json",
+		SubjectID:    "my-app-v1",
+		Reason:       "content digest mismatch",
+	}
+	if _, err := NewEvidenceQuarantinedEvent("complytime-worker", "my-app-v1", data); err == nil {
+		t.Error("expected error for empty contentDigest")
+	}
+}
+
+func TestNewEvidenceQuarantinedEventEmptyArtifactType(t *testing.T) {
+	data := EvidenceQuarantinedData{
+		ContentDigest: "sha256:abc123",
+		SubjectID:     "my-app-v1",
+		Reason:        "content digest mismatch",
+	}
+	if _, err := NewEvidenceQuarantinedEvent("complytime-worker", "my-app-v1", data); err == nil {
+		t.Error("expected error for empty artifactType")
 	}
 }
 

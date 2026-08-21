@@ -42,6 +42,8 @@ func validateSubjectID(subjectID string) error {
 	return nil
 }
 
+// TypeEvidenceIngested is the CloudEvents type for evidence accepted for
+// processing, before validation.
 const TypeEvidenceIngested = "dev.complytime.evidence.ingested"
 
 // EvidenceIngestedData is the CloudEvents data payload for
@@ -69,6 +71,12 @@ func NewEvidenceIngestedEvent(source, subject string, data EvidenceIngestedData)
 	if err := validateSubjectID(data.SubjectID); err != nil {
 		return cloudevents.Event{}, err
 	}
+	if data.ContentDigest == "" {
+		return cloudevents.Event{}, errors.New("contentDigest must not be empty")
+	}
+	if data.ArtifactType == "" {
+		return cloudevents.Event{}, errors.New("artifactType must not be empty")
+	}
 	if data.StorageRef == "" {
 		return cloudevents.Event{}, errors.New("storageRef must not be empty")
 	}
@@ -89,6 +97,8 @@ func NewEvidenceIngestedEvent(source, subject string, data EvidenceIngestedData)
 	return e, nil
 }
 
+// TypeEvidenceSealed is the CloudEvents type for evidence a worker has
+// validated and sealed into a unit of work.
 const TypeEvidenceSealed = "dev.complytime.evidence.sealed"
 
 // EvidenceSealedData is the CloudEvents data payload for evidence.sealed
@@ -117,6 +127,12 @@ func NewEvidenceSealedEvent(source, subject string, data EvidenceSealedData) (cl
 	if err := validateSubjectID(data.SubjectID); err != nil {
 		return cloudevents.Event{}, err
 	}
+	if data.ContentDigest == "" {
+		return cloudevents.Event{}, errors.New("contentDigest must not be empty")
+	}
+	if data.ArtifactType == "" {
+		return cloudevents.Event{}, errors.New("artifactType must not be empty")
+	}
 
 	e := event.New(cloudevents.VersionV1)
 	e.SetID(uuid.New().String())
@@ -131,6 +147,8 @@ func NewEvidenceSealedEvent(source, subject string, data EvidenceSealedData) (cl
 	return e, nil
 }
 
+// TypeEvidenceQuarantined is the CloudEvents type for evidence a worker
+// failed to validate and quarantined.
 const TypeEvidenceQuarantined = "dev.complytime.evidence.quarantined"
 
 // EvidenceQuarantinedData is the CloudEvents data payload for
@@ -159,6 +177,12 @@ func NewEvidenceQuarantinedEvent(source, subject string, data EvidenceQuarantine
 	}
 	if err := validateSubjectID(data.SubjectID); err != nil {
 		return cloudevents.Event{}, err
+	}
+	if data.ContentDigest == "" {
+		return cloudevents.Event{}, errors.New("contentDigest must not be empty")
+	}
+	if data.ArtifactType == "" {
+		return cloudevents.Event{}, errors.New("artifactType must not be empty")
 	}
 	if data.Reason == "" {
 		return cloudevents.Event{}, errors.New("reason must not be empty")

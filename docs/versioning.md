@@ -25,7 +25,7 @@ subscribers or signals nothing.
 |-------|-------|---------|----------|--------|
 | NATS subject | channel address | `core.evidence.ingested.{subjectId}` | Nothing — routing address only | Broker (routing) |
 | CloudEvents type | `type` | `dev.complytime.evidence.ingested` | The event's payload contract (breaking changes) | Consumer per-message dispatch |
-| AsyncAPI contract | `info.version` | `0.1.0` | The whole published contract | Humans, codegen tooling |
+| AsyncAPI contract | `info.version` | `0.2.0` | The whole published contract | Humans, codegen tooling |
 | CloudEvents envelope | `specversion` | `1.0` | The CNCF envelope format — not ours | Nobody (hands off) |
 
 ### NATS subject — frozen routing address
