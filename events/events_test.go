@@ -428,6 +428,9 @@ func TestExamplePayloads_ConformToSchema(t *testing.T) {
 				if data.SubjectID == "" {
 					t.Error("data.subjectId must not be empty")
 				}
+				if data.StorageRef == "" {
+					t.Error("data.storageRef must not be empty")
+				}
 			case TypeEvidenceSealed:
 				var data EvidenceSealedData
 				if err := json.Unmarshal(envelope.Data, &data); err != nil {
