@@ -13,7 +13,7 @@
       "type": "string"
     },
     "storageRef": {
-      "description": "URI-style storage reference consumers use to fetch the evidence artifact (must include a scheme prefix, e.g. s3://, gcp://, locker://)",
+      "description": "URI-style storage reference consumers use to fetch the evidence artifact (must include a scheme prefix, e.g. s3://, gcs://, locker://)",
       "type": "string"
     },
     "subjectId": {

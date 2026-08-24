@@ -166,7 +166,7 @@ components:
                     description: SHA-256 digest of the evidence artifact
                 storageRef:
                     type: string
-                    description: URI-style storage reference consumers use to fetch the evidence artifact (must include a scheme prefix, e.g. s3://, gcp://, locker://)
+                    description: URI-style storage reference consumers use to fetch the evidence artifact (must include a scheme prefix, e.g. s3://, gcs://, locker://)
                 subjectId:
                     type: string
                     description: Compliance subject identifier
@@ -287,7 +287,7 @@ components:
                     description: SHA-256 digest of the evidence artifact
                 storageRef:
                     type: string
-                    description: URI-style storage reference to the sealed WORM evidence object consumers fetch (must include a scheme prefix, e.g. s3://, gcp://, locker://)
+                    description: URI-style storage reference to the sealed WORM evidence object consumers fetch (must include a scheme prefix, e.g. s3://, gcs://, locker://)
                 subjectId:
                     type: string
                     description: Compliance subject identifier
