@@ -31,6 +31,7 @@ func main() {
 	data := events.EvidenceIngestedData{
 		ContentDigest: "sha256:abc123...",
 		ArtifactType:  "application/vnd.gemara.evaluation-log+json",
+		StorageRef:    "s3://evidence-bucket/my-app-v1/evaluation-log.json",
 		SubjectID:     "my-app-v1",
 	}
 
@@ -46,7 +47,23 @@ func main() {
 
 | Type | Constant | Description |
 |------|----------|-------------|
-| `dev.complytime.evidence.ingested` | `events.TypeEvidenceIngested` | Evidence accepted for processing |
+| `dev.complytime.evidence.ingested` | `events.TypeEvidenceIngested` | Evidence accepted for processing, before validation |
+| `dev.complytime.evidence.sealed` | `events.TypeEvidenceSealed` | Evidence validated and sealed into a unit of work |
+| `dev.complytime.evidence.quarantined` | `events.TypeEvidenceQuarantined` | Evidence failed validation and was quarantined |
+
+### Correlation
+
+Events do not carry a dedicated correlation attribute.
+
+- **Join an artifact's lifecycle events** (`ingested` →
+  `sealed`|`quarantined`) on the shared `contentDigest`. Caveat: a
+  `quarantined` event whose `reason` is a content-digest mismatch is the one case
+  where the digest is itself in doubt.
+
+- **Trace across services** using the
+  [CloudEvents Distributed Tracing extension](https://github.com/cloudevents/spec/blob/main/cloudevents/extensions/distributed-tracing.md)
+  (`traceparent`/`tracestate`, W3C Trace Context). This is the observability
+  plane, set and propagated by the producer's tracing SDK, not by this library.
 
 ### Payload Examples
 
@@ -55,9 +72,9 @@ Example CloudEvents JSON payloads are in
 
 | File | Description |
 |------|-------------|
-| [`evidence-ingested.json`](api/events/examples/evidence-ingested.json) | Common payload with required fields and `storageRef` |
-| [`evidence-ingested-minimal.json`](api/events/examples/evidence-ingested-minimal.json) | Required data fields only (no optional fields) |
-| [`evidence-ingested-with-shard.json`](api/events/examples/evidence-ingested-with-shard.json) | All fields including optional `shardId` |
+| [`evidence-ingested.json`](api/events/examples/evidence-ingested.json) | Ingested outcome; all data fields including `storageRef` |
+| [`evidence-sealed.json`](api/events/examples/evidence-sealed.json) | Sealed outcome after successful validation |
+| [`evidence-quarantined.json`](api/events/examples/evidence-quarantined.json) | Quarantined outcome after failed validation, with `reason` |
 
 These examples conform to the [JSON Schema](api/events/schemas/) and
 [AsyncAPI spec](api/events/asyncapi.yaml). They are hand-maintained
@@ -114,7 +131,7 @@ task check
 
    Example sentinel field:
    ```go
-   _ struct{} `asyncapi:"channel:core.widget.created.{ownerId},param:ownerId=The widget owner,stream:WIDGETS,type:dev.complytime.widget.created,send:Published when a widget is created,receive:Consume widget-created events,description:Widget creation pipeline"`
+   _ struct{} `asyncapi:"channel:complyapi.widget.created.{ownerId},param:ownerId=The widget owner,stream:WIDGETS,type:dev.complytime.widget.created,send:Published when a widget is created,receive:Consume widget-created events,description:Widget creation pipeline"`
    ```
 
 2. Add `asyncapi-field:"description:..."` tags on each struct field for

@@ -83,9 +83,9 @@ func run(opts Options, stdout, stderr io.Writer) error {
 		if err := WriteJSONSchemas(specs, opts.SchemasDir); err != nil {
 			return fmt.Errorf("schema write error: %w", err)
 		}
-		fmt.Fprintf(stdout, "asyncapi-gen: wrote JSON schemas to %s\n", opts.SchemasDir)
+		fmt.Fprintf(stdout, "asyncapi-gen: wrote JSON schemas to %s\n", opts.SchemasDir) //nolint:gosec // G705: stdout is a CLI status stream, not an HTML/browser sink; XSS does not apply
 	}
 
-	fmt.Fprintf(stdout, "asyncapi-gen: wrote %s (%d event(s))\n", opts.Output, len(specs))
+	fmt.Fprintf(stdout, "asyncapi-gen: wrote %s (%d event(s))\n", opts.Output, len(specs)) //nolint:gosec // G705: stdout is a CLI status stream, not an HTML/browser sink; XSS does not apply
 	return nil
 }
