@@ -1,9 +1,8 @@
-# SPDX-License-Identifier: Apache-2.0
 version: "2"
 linters:
-  default: standard
+  default: standard # https://golangci-lint.run/usage/linters/#enabled-by-default
   enable:
-    - gosec
+    - gosec # Security checks for Go code
   exclusions:
     generated: lax
     presets:
@@ -13,6 +12,6 @@ linters:
       - std-error-handling
 formatters:
   enable:
-    - goimports
+    - goimports # Checks import statements are formatted
   exclusions:
     generated: lax
